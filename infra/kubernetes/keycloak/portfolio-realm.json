@@ -1,0 +1,67 @@
+{
+  "realm": "portfolio",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "resetPasswordAllowed": true,
+  "verifyEmail": true,
+  "sslRequired": "external",
+  "roles": {
+    "realm": [
+      {
+        "name": "client"
+      },
+      {
+        "name": "consultant"
+      }
+    ]
+  },
+  "defaultRoles": [
+    "client"
+  ],
+  "clients": [
+    {
+      "clientId": "portfolio",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "${KEYCLOAK_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": [
+        "${PORTFOLIO_URL}/api/auth/callback/keycloak"
+      ],
+      "webOrigins": [
+        "${PORTFOLIO_URL}"
+      ],
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocolMappers": [
+        {
+          "name": "realm-roles",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-usermodel-realm-role-mapper",
+          "config": {
+            "claim.name": "roles",
+            "multivalued": "true",
+            "id.token.claim": "true",
+            "access.token.claim": "true",
+            "userinfo.token.claim": "true",
+            "jsonType.label": "String"
+          }
+        }
+      ]
+    }
+  ],
+  "smtpServer": {
+    "host": "${SMTP_HOST}",
+    "port": "${SMTP_PORT}",
+    "from": "${SMTP_FROM}",
+    "auth": "${SMTP_AUTH}",
+    "starttls": "${SMTP_STARTTLS}",
+    "ssl": "false",
+    "user": "${SMTP_USER}",
+    "password": "${SMTP_PASSWORD}"
+  }
+}

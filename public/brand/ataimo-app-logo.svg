@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Ataimo Edem</title>
+  <desc id="desc">Geometric AE monogram in cobalt on the portfolio's warm ivory background.</desc>
+  <rect width="512" height="512" rx="80" fill="#f5f3ed"/>
+  <g fill="#2447b9">
+    <path fill-rule="evenodd" d="M72 352 156 144h40l84 208h-48l-16-44h-80l-16 44Zm80-84h48l-24-68Z"/>
+    <path d="M288 144h144v44h-96v36h80v44h-80v40h96v44H288Z"/>
+    <rect x="416" y="376" width="16" height="16"/>
+  </g>
+</svg>

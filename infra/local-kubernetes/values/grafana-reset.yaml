@@ -1,0 +1,16 @@
+image: python:3.12-slim
+command: [python, /scripts/run.py]
+env: []
+script: |
+  from pathlib import Path
+  import shutil
+
+  root = Path('/data')
+  if not root.is_mount():
+      raise RuntimeError('Expected Grafana PVC mounted at /data')
+  for entry in root.iterdir():
+      if entry.is_symlink() or not entry.is_dir():
+          entry.unlink()
+      else:
+          shutil.rmtree(entry)
+  print('Grafana local data cleared; PostgreSQL will initialize fresh')

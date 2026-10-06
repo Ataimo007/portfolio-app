@@ -1,0 +1,135 @@
+{
+  "image": "quay.io/keycloak/keycloak:26.8.0",
+  "port": 8080,
+  "args": [
+    "start",
+    "--import-realm"
+  ],
+  "env": [
+    {
+      "name": "KC_DB",
+      "value": "postgres"
+    },
+    {
+      "name": "KC_DB_URL",
+      "value": "jdbc:postgresql://postgres.database.svc.cluster.local:5432/keycloak"
+    },
+    {
+      "name": "KC_DB_USERNAME",
+      "value": "keycloak"
+    },
+    {
+      "name": "KC_HTTP_ENABLED",
+      "value": "true"
+    },
+    {
+      "name": "KC_HOSTNAME",
+      "value": "http://keycloak.ataimo.com"
+    },
+    {
+      "name": "KC_HEALTH_ENABLED",
+      "value": "true"
+    },
+    {
+      "name": "KC_METRICS_ENABLED",
+      "value": "true"
+    },
+    {
+      "name": "KC_BOOTSTRAP_ADMIN_USERNAME",
+      "value": "admin"
+    },
+    {
+      "name": "JAVA_OPTS_KC_HEAP",
+      "value": "-Xms128m -Xmx384m"
+    },
+    {
+      "name": "KC_DB_PASSWORD",
+      "valueFrom": {
+        "secretKeyRef": {
+          "name": "keycloak-credentials",
+          "key": "database-password"
+        }
+      }
+    },
+    {
+      "name": "KC_BOOTSTRAP_ADMIN_PASSWORD",
+      "valueFrom": {
+        "secretKeyRef": {
+          "name": "keycloak-credentials",
+          "key": "admin-password"
+        }
+      }
+    },
+    {
+      "name": "KC_PROXY_HEADERS",
+      "value": "xforwarded"
+    },
+    {
+      "name": "KC_PROXY_TRUSTED_ADDRESSES",
+      "value": "10.244.0.0/16"
+    }
+  ],
+  "configMountPath": "/opt/keycloak/data/import",
+  "config": {
+    "ataimo-realm.json": "{\"realm\": \"ataimo\", \"enabled\": true, \"registrationAllowed\": true, \"sslRequired\": \"none\", \"roles\": {\"realm\": [{\"name\": \"owner\"}, {\"name\": \"admin\"}, {\"name\": \"client\"}, {\"name\": \"demo-viewer\"}]}, \"clients\": [{\"clientId\": \"portfolio\", \"publicClient\": true, \"standardFlowEnabled\": true, \"directAccessGrantsEnabled\": false, \"redirectUris\": [\"http://ataimo.com/api/auth/callback/keycloak\"], \"webOrigins\": [\"http://ataimo.com\"], \"attributes\": {\"pkce.code.challenge.method\": \"S256\"}}], \"loginTheme\": \"ataimo\", \"displayName\": \"Ataimo Edem\", \"loginWithEmailAllowed\": true, \"duplicateEmailsAllowed\": false, \"resetPasswordAllowed\": false, \"passwordPolicy\": \"length(12) and notUsername(undefined) and notEmail(undefined)\"}"
+  },
+  "resources": {
+    "requests": {
+      "cpu": "200m",
+      "memory": "384Mi"
+    },
+    "limits": {
+      "memory": "768Mi"
+    }
+  },
+  "healthPath": "/health/ready",
+  "livenessPath": "/health/live",
+  "healthPort": "management",
+  "managementPort": 9000,
+  "monitoring": true,
+  "extraVolumes": [
+    {
+      "name": "login-theme",
+      "configMap": {
+        "name": "ataimo-login-theme",
+        "items": [
+          {
+            "key": "template.ftl",
+            "path": "template.ftl"
+          },
+          {
+            "key": "theme.properties",
+            "path": "theme.properties"
+          },
+          {
+            "key": "messages_en.properties",
+            "path": "messages/messages_en.properties"
+          },
+          {
+            "key": "tokens.css",
+            "path": "resources/css/tokens.css"
+          },
+          {
+            "key": "ataimo.css",
+            "path": "resources/css/ataimo.css"
+          },
+          {
+            "key": "Geist-Variable.woff2",
+            "path": "resources/fonts/Geist-Variable.woff2"
+          },
+          {
+            "key": "InstrumentSerif-Regular.ttf",
+            "path": "resources/fonts/InstrumentSerif-Regular.ttf"
+          }
+        ]
+      }
+    }
+  ],
+  "extraVolumeMounts": [
+    {
+      "name": "login-theme",
+      "mountPath": "/opt/keycloak/themes/ataimo/login",
+      "readOnly": true
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+apiVersion: apps/v1
+kind: {{ ternary "StatefulSet" "Deployment" .Values.persistence.enabled }}
+metadata:
+  name: {{ .Release.Name }}
+spec:
+  {{- if .Values.persistence.enabled }}
+  serviceName: {{ .Release.Name }}
+  {{- end }}
+  {{- if not .Values.persistence.enabled }}
+  {{- with .Values.strategy }}
+  strategy: {{ toJson . }}
+  {{- end }}
+  {{- end }}
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ toJson .Values.config | sha256sum }}
+        {{- with .Values.themeRevision }}
+        checksum/theme: {{ . | quote }}
+        {{- end }}
+      labels:
+        app: {{ .Release.Name }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toJson . }}
+      {{- end }}
+      automountServiceAccountToken: false
+      containers:
+        - name: service
+          image: {{ .Values.image | quote }}
+          imagePullPolicy: IfNotPresent
+          {{- with .Values.securityContext }}
+          securityContext: {{ toJson . }}
+          {{- end }}
+          {{- with .Values.args }}
+          args: {{ toJson . }}
+          {{- end }}
+          ports:
+            - containerPort: {{ .Values.port }}
+              name: service
+            {{- if .Values.managementPort }}
+            - containerPort: {{ .Values.managementPort }}
+              name: management
+            {{- end }}
+          env: {{ toJson .Values.env }}
+          {{- if or .Values.envFrom .Values.integrationSecret }}
+          envFrom:
+            {{- range .Values.envFrom }}
+            - {{ toJson . }}
+            {{- end }}
+            {{- if .Values.integrationSecret }}
+            - secretRef: {name: {{ .Values.integrationSecret | quote }}, optional: true}
+            {{- end }}
+          {{- end }}
+          resources: {{ toJson .Values.resources }}
+          startupProbe:
+            tcpSocket:
+              port: service
+            failureThreshold: 120
+            periodSeconds: 5
+          readinessProbe:
+            timeoutSeconds: 5
+            periodSeconds: 10
+            {{- if .Values.healthPath }}
+            httpGet:
+              path: {{ .Values.healthPath }}
+              port: {{ .Values.healthPort }}
+            {{- else }}
+            tcpSocket:
+              port: service
+            {{- end }}
+          {{- if .Values.healthPath }}
+          livenessProbe:
+            timeoutSeconds: 10
+            periodSeconds: 20
+            failureThreshold: 6
+            httpGet:
+              path: {{ default .Values.healthPath .Values.livenessPath }}
+              port: {{ .Values.healthPort }}
+          {{- end }}
+          {{- if or .Values.persistence.enabled .Values.config .Values.extraVolumeMounts }}
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: data
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if .Values.config }}
+            - name: config
+              mountPath: {{ .Values.configMountPath }}
+              readOnly: true
+            {{- end }}
+            {{- with .Values.extraVolumeMounts }}
+            {{ toYaml . | nindent 12 }}
+            {{- end }}
+          {{- end }}
+      {{- if or .Values.config .Values.extraVolumes }}
+      volumes:
+        {{- if .Values.config }}
+        - name: config
+          configMap:
+            name: {{ .Release.Name }}
+        {{- end }}
+        {{- with .Values.extraVolumes }}
+        {{ toYaml . | nindent 8 }}
+        {{- end }}
+      {{- end }}
+  {{- if .Values.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        resources:
+          requests:
+            storage: {{ .Values.persistence.size }}
+  {{- end }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    app: {{ .Release.Name }}
+spec:
+  selector:
+    app: {{ .Release.Name }}
+  ports:
+    - port: {{ .Values.port }}
+      targetPort: service
+      name: service
+    {{- if .Values.managementPort }}
+    - port: {{ .Values.managementPort }}
+      targetPort: management
+      name: management
+    {{- end }}
+{{- if .Values.config }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}
+data:
+  {{- range $name, $content := .Values.config }}
+  {{ $name }}: {{ $content | quote }}
+  {{- end }}
+{{- end }}
+
+{{- if and .Values.monitoring (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1/ServiceMonitor") }}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Release.Name }}
+  labels:
+    release: monitoring
+spec:
+  selector:
+    matchLabels:
+      app: {{ .Release.Name }}
+  endpoints:
+    - port: management
+      path: /metrics
+      interval: 30s
+{{- end }}

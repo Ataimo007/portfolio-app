@@ -1,0 +1,3 @@
+{
+  "script": "import sqlite3\nfrom pathlib import Path\nsource=Path('/data/grafana.db')\nconnection=sqlite3.connect(f'file:{source}?mode=ro',uri=True)\nbackup=sqlite3.connect('/data/grafana.pre-postgres.db')\nconnection.backup(backup)\nbackup.close()\nfor table in ['user','dashboard','data_source','org']:\n print(table, connection.execute(f'SELECT count(*) FROM \"{table}\"').fetchone()[0])\nprint('SQLite consistent backup preserved on existing PVC')\n"
+}

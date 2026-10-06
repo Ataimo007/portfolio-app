@@ -1,0 +1,4 @@
+image: python:3.12-slim
+command: [python, /scripts/run.py]
+script: ""
+env: []

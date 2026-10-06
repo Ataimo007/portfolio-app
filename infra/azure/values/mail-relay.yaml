@@ -1,0 +1,16 @@
+externalRelay:
+  host: '[mail.smtp2go.com]:587'
+  existingSecret: mailu-relay
+postfix:
+  overrides:
+    postfix.cf: |
+      mynetworks = 127.0.0.1/32
+      default_transport = smtp
+      relay_transport = relay
+      smtp_tls_policy_maps = lmdb:/etc/postfix/tls_policy.map
+      smtp_tls_mandatory_protocols = >=TLSv1.2
+    tls_policy.map: |
+      [mail.smtp2go.com]:587 secure match=mail.smtp2go.com
+tls:
+  outboundLevel: secure
+  deferOnError: 'True'

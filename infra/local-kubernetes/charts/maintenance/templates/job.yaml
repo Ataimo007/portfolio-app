@@ -1,0 +1,41 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}
+data:
+  run.py: {{ .Values.script | quote }}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ .Release.Name }}-{{ .Release.Revision }}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 600
+  template:
+    spec:
+      restartPolicy: Never
+      automountServiceAccountToken: false
+      containers:
+        - name: maintenance
+          image: {{ .Values.image }}
+          command: {{ toJson .Values.command }}
+          env: {{ toJson .Values.env }}
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+          volumeMounts:
+            - name: data
+              mountPath: /data
+            - name: scripts
+              mountPath: /scripts
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: monitoring-grafana
+        - name: scripts
+          configMap:
+            name: {{ .Release.Name }}

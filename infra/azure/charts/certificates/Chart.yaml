@@ -1,0 +1,4 @@
+apiVersion: v2
+name: certificates
+version: 0.1.0
+description: DNS-01 ACME issuers and Envoy certificate lifecycle

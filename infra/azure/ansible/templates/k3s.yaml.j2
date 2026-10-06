@@ -1,0 +1,9 @@
+write-kubeconfig-mode: "0600"
+disable:
+  - traefik
+tls-san:
+  - {{ ansible_host }}
+  - {{ vm_fqdn }}
+node-label:
+  - ataimo.com/environment=azure
+secrets-encryption: true

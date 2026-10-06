@@ -1,0 +1,8 @@
+hostnames:
+  - mail.ataimo.com
+  - webmail.ataimo.com
+issuer: letsencrypt-production
+resolver:
+  enabled: true
+  image: ghcr.io/mailu/unbound:2024.06.58
+  clusterDNS: 10.43.0.10

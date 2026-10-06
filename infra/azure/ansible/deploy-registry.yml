@@ -1,0 +1,49 @@
+- name: Deploy immutable registry images on Azure K3s
+  hosts: k3s
+  become: true
+  tasks:
+    - name: Create private deployment directory
+      ansible.builtin.file:
+        path: /opt/ataimo/infra/azure/.local
+        state: directory
+        mode: '0700'
+    - name: Upload deployment assets
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/../.local/source.tar.gz'
+        dest: /opt/ataimo/source.tar.gz
+        mode: '0600'
+    - name: Extract deployment assets
+      ansible.builtin.unarchive:
+        src: /opt/ataimo/source.tar.gz
+        dest: /opt/ataimo
+        remote_src: true
+    - name: Upload non-secret environment configuration
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/../.local/config.json'
+        dest: /opt/ataimo/infra/azure/.local/config.json
+        mode: '0600'
+    - name: Upload private registry Helm settings
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/../.local/registry-values.json'
+        dest: /opt/ataimo/infra/azure/.local/registry-values.json
+        mode: '0600'
+    - name: Deploy dependencies only for an explicitly selected fresh stack
+      ansible.builtin.command: bash infra/azure/scripts/deploy-stack.sh
+      args:
+        chdir: /opt/ataimo
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        APP_IMAGE: '{{ lookup("env", "APP_IMAGE") }}'
+        WORKER_IMAGE: '{{ lookup("env", "WORKER_IMAGE") }}'
+      when: lookup('env', 'DEPLOY_ROUTE') == 'greenfield'
+      changed_when: true
+    - name: Update only application and worker releases
+      ansible.builtin.command: bash infra/azure/ci/deploy-images.sh
+      args:
+        chdir: /opt/ataimo
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        APP_IMAGE: '{{ lookup("env", "APP_IMAGE") }}'
+        WORKER_IMAGE: '{{ lookup("env", "WORKER_IMAGE") }}'
+      when: lookup('env', 'DEPLOY_ROUTE') == 'brownfield'
+      changed_when: true

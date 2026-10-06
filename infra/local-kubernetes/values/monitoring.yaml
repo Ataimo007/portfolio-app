@@ -1,0 +1,124 @@
+{
+  "alertmanager": {
+    "enabled": false
+  },
+  "grafana": {
+    "admin": {
+      "existingSecret": "grafana-credentials",
+      "userKey": "username",
+      "passwordKey": "password"
+    },
+    "persistence": {
+      "enabled": true,
+      "size": "1Gi"
+    },
+    "resources": {
+      "requests": {
+        "cpu": "250m",
+        "memory": "512Mi"
+      },
+      "limits": {
+        "memory": "1Gi"
+      }
+    },
+    "startupProbe": {
+      "httpGet": {
+        "path": "/api/health",
+        "port": "grafana"
+      },
+      "periodSeconds": 5,
+      "failureThreshold": 120,
+      "timeoutSeconds": 3
+    },
+    "deploymentStrategy": {
+      "type": "RollingUpdate",
+      "rollingUpdate": {
+        "maxSurge": 0,
+        "maxUnavailable": 1
+      }
+    },
+    "grafana.ini": {
+      "database": {
+        "type": "postgres",
+        "host": "postgres.database.svc.cluster.local:5432",
+        "name": "grafana",
+        "user": "grafana",
+        "ssl_mode": "disable"
+      },
+      "server": {
+        "domain": "grafana.ataimo.com",
+        "root_url": "http://grafana.ataimo.com/"
+      }
+    },
+    "envValueFrom": {
+      "GF_DATABASE_PASSWORD": {
+        "secretKeyRef": {
+          "name": "grafana-credentials",
+          "key": "database-password"
+        }
+      }
+    },
+    "env": {
+      "GOMAXPROCS": "2",
+      "GOMEMLIMIT": "800MiB"
+    }
+  },
+  "prometheus": {
+    "prometheusSpec": {
+      "retention": "24h",
+      "resources": {
+        "requests": {
+          "memory": "256Mi",
+          "cpu": "100m"
+        },
+        "limits": {
+          "memory": "768Mi"
+        }
+      },
+      "storageSpec": {
+        "volumeClaimTemplate": {
+          "spec": {
+            "accessModes": [
+              "ReadWriteOnce"
+            ],
+            "resources": {
+              "requests": {
+                "storage": "4Gi"
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "kubeControllerManager": {
+    "enabled": false
+  },
+  "kubeScheduler": {
+    "enabled": false
+  },
+  "kubeEtcd": {
+    "enabled": false
+  },
+  "kubeProxy": {
+    "enabled": false
+  },
+  "prometheusOperator": {
+    "livenessProbe": {
+      "timeoutSeconds": 5,
+      "failureThreshold": 6
+    },
+    "readinessProbe": {
+      "timeoutSeconds": 5
+    },
+    "resources": {
+      "requests": {
+        "cpu": "100m",
+        "memory": "128Mi"
+      },
+      "limits": {
+        "memory": "384Mi"
+      }
+    }
+  }
+}

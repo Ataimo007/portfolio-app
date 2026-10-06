@@ -1,0 +1,16 @@
+## Reproducing hashing behaviour
+
+API-key investigations sometimes require reproducing how Tyk represents keys internally. This Go utility supports inspecting hashing behaviour during development, validation and troubleshooting.
+
+## Supported algorithms
+
+- SHA-256
+- Murmur32
+- Murmur64
+- Murmur128
+
+## Diagnostic scope
+
+The tool helps compare expected and observed hashing behaviour. The algorithms are presented as supported diagnostic modes, rather than interchangeable security recommendations.
+
+The public repository provides the implementation and usage instructions. Use synthetic tokens for demonstrations and keep production API keys private.

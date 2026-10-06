@@ -1,0 +1,37 @@
+- name: Build and deploy the platform on K3s
+  hosts: k3s
+  become: true
+  tasks:
+    - name: Create deployment directory
+      ansible.builtin.file:
+        path: /opt/ataimo
+        state: directory
+        mode: '0700'
+    - name: Upload source bundle
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/../.local/source.tar.gz'
+        dest: /opt/ataimo/source.tar.gz
+        mode: '0600'
+    - name: Extract source
+      ansible.builtin.unarchive:
+        src: /opt/ataimo/source.tar.gz
+        dest: /opt/ataimo
+        remote_src: true
+    - name: Create private configuration directory
+      ansible.builtin.file:
+        path: /opt/ataimo/infra/azure/.local
+        state: directory
+        mode: '0700'
+    - name: Upload environment configuration
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/../.local/config.json'
+        dest: /opt/ataimo/infra/azure/.local/config.json
+        mode: '0600'
+    - name: Build and deploy Helm workloads
+      ansible.builtin.command: bash infra/azure/scripts/deploy-stack.sh
+      args:
+        chdir: /opt/ataimo
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: deployment
+      changed_when: true

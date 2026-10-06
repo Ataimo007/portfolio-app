@@ -1,0 +1,7 @@
+.next
+node_modules
+package-lock.json
+assets
+public
+PLAN.md
+CODEX_PROMPT.md

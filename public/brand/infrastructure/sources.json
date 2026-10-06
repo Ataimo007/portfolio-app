@@ -1,0 +1,10 @@
+{
+  "envoy": "https://raw.githubusercontent.com/cncf/artwork/main/projects/envoy/envoy-gateway/icon/color/envoy-gateway-icon-color.svg",
+  "keycloak": "https://raw.githubusercontent.com/cncf/artwork/main/projects/keycloak/icon/color/keycloak-icon-color.svg",
+  "prometheus": "https://raw.githubusercontent.com/cncf/artwork/main/projects/prometheus/icon/color/prometheus-icon-color.svg",
+  "grafana": "https://raw.githubusercontent.com/grafana/grafana/main/public/img/grafana_icon.svg",
+  "mailu": "https://raw.githubusercontent.com/Mailu/Mailu/master/docs/assets/logo.svg",
+  "postgres": "https://www.postgresql.org/media/img/about/press/elephant.png",
+  "redpanda": "https://cdn.prod.website-files.com/68ed36e99e31581dedf5dc7c/68ed36e99e31581dedf5dce4_a5720d179e00645b59a680ca40cc9200_redpanda-logo-red.svg",
+  "smtp2go": "https://www.smtp2go.com/assets/images/v3/ui/logo.svg"
+}

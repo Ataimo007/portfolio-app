@@ -1,0 +1,68 @@
+# Optional, not part of the default Kustomization. Configure domain, account and TLS first.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: {name: mailbox, namespace: portfolio}
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources: {requests: {storage: 40Gi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: mailserver, namespace: portfolio}
+spec:
+  selector: {app: mailserver}
+  ports:
+    - {name: submission, port: 587}
+    - {name: imaps, port: 993}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: mailserver, namespace: portfolio}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: mailserver}}
+  template:
+    metadata: {labels: {app: mailserver}}
+    spec:
+      automountServiceAccountToken: false
+      initContainers:
+        - name: directories
+          image: busybox:1.37.0
+          command: [sh, -c, 'mkdir -p /data/mail /data/state /data/config /data/logs']
+          volumeMounts: [{name: data, mountPath: /data}]
+      containers:
+        - name: mailserver
+          image: ghcr.io/docker-mailserver/docker-mailserver:16.0.1
+          env:
+            - {name: OVERRIDE_HOSTNAME, value: mail.example.invalid}
+            - {name: SSL_TYPE, value: manual}
+            - {name: SSL_CERT_PATH, value: /certs/tls.crt}
+            - {name: SSL_KEY_PATH, value: /certs/tls.key}
+            - {name: ENABLE_RSPAMD, value: '1'}
+            - {name: ENABLE_CLAMAV, value: '0'}
+            - {name: ENABLE_FAIL2BAN, value: '0'}
+            - {name: PERMIT_DOCKER, value: none}
+            - {name: SPOOF_PROTECTION, value: '1'}
+          ports:
+            - {name: smtp, containerPort: 25, hostPort: 25}
+            - {name: submission, containerPort: 587, hostPort: 587}
+            - {name: imaps, containerPort: 993, hostPort: 993}
+          resources:
+            requests: {cpu: 200m, memory: 512Mi}
+            limits: {memory: 2Gi}
+          readinessProbe:
+            tcpSocket: {port: 25}
+            initialDelaySeconds: 30
+          volumeMounts:
+            - {name: data, mountPath: /var/mail, subPath: mail}
+            - {name: data, mountPath: /var/mail-state, subPath: state}
+            - {name: data, mountPath: /var/log/mail, subPath: logs}
+            - {name: data, mountPath: /tmp/docker-mailserver, subPath: config}
+            - {name: tls, mountPath: /certs, readOnly: true}
+      volumes:
+        - name: data
+          persistentVolumeClaim: {claimName: mailbox}
+        - name: tls
+          secret: {secretName: mail-tls}

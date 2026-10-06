@@ -1,0 +1,21 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata: {name: portfolio}
+spec:
+  ingressClassName: traefik
+  tls:
+    - hosts: [www.example.invalid, auth.example.invalid]
+      secretName: web-tls
+  rules:
+    - host: www.example.invalid
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: app, port: {number: 3000}}}
+    - host: auth.example.invalid
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend: {service: {name: keycloak, port: {number: 8080}}}

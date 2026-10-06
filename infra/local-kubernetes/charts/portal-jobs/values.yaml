@@ -1,0 +1,6 @@
+image: ataimo-portfolio:kind-dev
+workerImage: ataimo-portfolio-worker:kind-dev
+
+integrationSecret: ""
+
+imagePullSecrets: []

@@ -1,0 +1,132 @@
+{{- if and .Values.consoleBasicAuth.enabled (not .Values.tls.enabled) }}
+{{- fail "Console basic authentication requires HTTPS." }}
+{{- end }}
+apiVersion: gateway.networking.k8s.io/v1
+kind: GatewayClass
+metadata:
+  name: {{ .Values.className }}
+spec:
+  controllerName: gateway.envoyproxy.io/gatewayclass-controller
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: EnvoyProxy
+metadata:
+  name: ataimo
+spec:
+  concurrency: {{ .Values.proxy.concurrency }}
+  provider:
+    type: Kubernetes
+    kubernetes:
+      envoyService:
+        type: {{ .Values.serviceType | default "ClusterIP" }}
+      envoyDeployment:
+        {{- toYaml .Values.proxy.deployment | nindent 8 }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: ataimo
+spec:
+  gatewayClassName: {{ .Values.className }}
+  infrastructure:
+    parametersRef:
+      group: gateway.envoyproxy.io
+      kind: EnvoyProxy
+      name: ataimo
+  listeners:
+    {{- range .Values.routes }}
+    - name: {{ .name }}
+      hostname: {{ .hostname }}
+      protocol: {{ ternary "HTTPS" "HTTP" (default false $.Values.tls.enabled) }}
+      port: {{ ternary 443 80 (default false $.Values.tls.enabled) }}
+      {{- if $.Values.tls.enabled }}
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - name: {{ .tlsSecretName | default $.Values.tls.secretName }}
+            {{- with .tlsSecretNamespace }}
+            namespace: {{ . }}
+            {{- end }}
+      {{- end }}
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .namespace }}
+      {{- if $.Values.tls.enabled }}
+    - name: {{ .name }}-http
+      hostname: {{ .hostname }}
+      protocol: HTTP
+      port: 80
+      allowedRoutes:
+        namespaces:
+          from: Selector
+          selector:
+            matchLabels:
+              kubernetes.io/metadata.name: {{ .namespace }}
+      {{- end }}
+    {{- end }}
+{{- range .Values.routes }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .name }}
+  namespace: {{ .namespace }}
+spec:
+  parentRefs:
+    - name: ataimo
+      namespace: {{ $.Release.Namespace }}
+      sectionName: {{ .name }}
+  hostnames:
+    - {{ .hostname }}
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - name: {{ .service }}
+          port: {{ .port }}
+{{- end }}
+
+{{- if .Values.tls.enabled }}
+{{- range .Values.routes }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: {{ .name }}-redirect
+  namespace: {{ .namespace }}
+spec:
+  parentRefs:
+    - name: ataimo
+      namespace: {{ $.Release.Namespace }}
+      sectionName: {{ .name }}-http
+  hostnames: [{{ .hostname | quote }}]
+  rules:
+    - filters:
+        - type: RequestRedirect
+          requestRedirect:
+            scheme: https
+            port: 443
+            statusCode: 301
+{{- end }}
+{{- end }}
+{{- if .Values.consoleBasicAuth.enabled }}
+---
+apiVersion: gateway.envoyproxy.io/v1alpha1
+kind: SecurityPolicy
+metadata:
+  name: console-authentication
+  namespace: streaming
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: HTTPRoute
+      name: redpanda-console
+  basicAuth:
+    users:
+      name: console-basic-auth
+{{- end }}

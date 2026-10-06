@@ -1,0 +1,27 @@
+## From investigation to diagnostic workflow
+
+Duplicate or conflicting routes are a recurring API troubleshooting scenario. Domain and listen-path combinations provide the basis for detecting potential conflicts across APIs.
+
+## What the tool does
+
+- Retrieves API configuration using the Tyk Dashboard REST API.
+- Analyses domain and listen-path combinations.
+- Supports strict and broad match modes and internal API handling.
+- Produces table, JSON and CSV output.
+- Exposes CI-friendly exit codes for automated checks.
+
+## Illustrative route conflict
+
+The following is synthetic data that explains the concept. It is not captured customer output or a claim about the exact CLI display.
+
+```text
+Domain                Listen path    API name
+api.example.test      /orders/       Orders service
+api.example.test      /orders/       Orders legacy
+
+Potential conflict: same domain and listen path
+```
+
+## Operational value
+
+A repeatable CLI makes the investigation usable beyond a single support session. Human-readable tables suit diagnosis; structured output suits reporting and CI pipelines. Consult the repository for actual command flags and mode behaviour.

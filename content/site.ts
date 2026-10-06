@@ -1,0 +1,268 @@
+export const profile = {
+  name: "Ataimo Edem",
+  email: "contact@ataimo.com",
+  phone: "+234 816 0594 893",
+  phoneHref: "tel:+2348160594893",
+  github: "https://github.com/Ataimo007",
+  linkedin: "https://www.linkedin.com/in/ataimo-edem-4780b8160/",
+  summary:
+    "Customer Success Engineer specialising in API Management, Solutions Architecture, Kubernetes, Cloud and enterprise integrations.",
+};
+export const projects = [
+  {
+    slug: "edp-migration",
+    title: "Enterprise Developer Portal Migration Automation",
+    category: "MIGRATION ENGINEERING",
+    language: "Go",
+    summary:
+      "An end-to-end migration platform for moving Tyk Classic Developer Portal to EDP while preserving existing API keys and developer login credentials.",
+    url: "https://github.com/Ataimo007/edp-migration-poc",
+    private: true,
+    tech: ["Go", "REST APIs", "Docker", "Identity migration"],
+    flow: [
+      "Classic Portal",
+      "Discovery",
+      "Backup",
+      "Dry-run plan",
+      "Migration",
+      "Reconciliation",
+      "Cutover",
+      "EDP",
+    ],
+  },
+  {
+    slug: "crd-migration",
+    title: "Kubernetes CRD Migration Automation",
+    category: "CLOUD-NATIVE AUTOMATION",
+    language: "Bash",
+    summary:
+      "Discovery, backup, transformation and migration of Tyk Operator-managed Custom Resources between Kubernetes environments.",
+    url: "https://github.com/Ataimo007/tyk-crd-migration",
+    private: false,
+    tech: ["Kubernetes", "kubectl", "Bash", "Tyk Operator"],
+    flow: [
+      "Cluster A",
+      "Discovery",
+      "Backup",
+      "Transform",
+      "Validate",
+      "Cluster B",
+    ],
+  },
+  {
+    slug: "route-collision-analyzer",
+    title: "API Route Collision Analyzer",
+    category: "PRODUCTION DIAGNOSTICS",
+    language: "Python",
+    summary:
+      "A Python CLI that turns recurring route conflicts into a repeatable diagnostic workflow, analysing domain and listen-path combinations.",
+    url: "https://github.com/Ataimo007/tyk-dup-listen-path-checker",
+    private: false,
+    tech: ["Python", "REST APIs", "API Gateway", "CI/CD"],
+    flow: [
+      "Dashboard API",
+      "Domain + path",
+      "Strict / broad analysis",
+      "Table · JSON · CSV",
+      "CI exit code",
+    ],
+  },
+  {
+    slug: "hybrid-api-gateway",
+    title: "Hybrid API Gateway Development Environment",
+    category: "HYBRID ARCHITECTURE",
+    language: "Docker",
+    summary:
+      "A lightweight Docker Compose environment for developing and troubleshooting Tyk Hybrid Gateway and analytics Pump with Redis and remote control-plane connectivity.",
+    url: "https://github.com/Ataimo007/tyk-hybrid-docker",
+    private: false,
+    tech: ["Docker Compose", "Tyk Gateway", "Redis", "Analytics"],
+    flow: ["Control Plane / MDCB", "Gateway ↔ Redis", "Pump", "Analytics"],
+  },
+  {
+    slug: "api-key-hashing",
+    title: "API Key Hashing & Diagnostic Utility",
+    category: "SECURITY & VALIDATION",
+    language: "Go",
+    summary:
+      "A diagnostic utility for reproducing and inspecting Tyk API-key hashing behaviour for troubleshooting, validation and development.",
+    url: "https://github.com/Ataimo007/tyk-hashing",
+    private: false,
+    tech: ["Go", "SHA-256", "MurmurHash", "API security"],
+    flow: [
+      "Example token",
+      "SHA-256 / Murmur32 / 64 / 128",
+      "Hashed representation",
+    ],
+  },
+];
+export const roles = [
+  {
+    company: "Tyk",
+    title: "Customer Success Engineer",
+    dates: "July 2025 – Present",
+    location: "Greater London / Remote",
+    summary:
+      "Own the technical success of enterprise customers across EMEA, from architecture and implementation to production operations and platform evolution.",
+    themes: [
+      "High availability, hybrid and multi-data-centre architecture",
+      "L2/L3 investigation across Kubernetes, gateways, networking and data systems",
+      "OAuth 2.0, OIDC, JWT, mTLS and certificate authentication",
+      "Upgrade planning, migration strategy and compatibility assessment",
+      "Root-cause analysis and collaboration with Product and Engineering",
+      "Technical workshops, architecture reviews and customer enablement",
+    ],
+  },
+  {
+    company: "Tyk",
+    title: "Customer Solutions Architect",
+    dates: "December 2021 – July 2025",
+    location: "Greater London / Remote",
+    summary:
+      "Translated enterprise API, infrastructure and security requirements into deployable API Management architectures.",
+    themes: [
+      "Technical discovery and solution design",
+      "Kubernetes, cloud and hybrid deployment patterns",
+      "Customer onboarding, implementation and adoption",
+      "API security and platform integration workshops",
+      "Cross-functional delivery with Support, Product and Engineering",
+    ],
+  },
+  {
+    company: "Tek Experts",
+    title: "Azure Developer Support Engineer Stage 3",
+    dates: "October 2021 – January 2022",
+    location: "Lagos State, Nigeria",
+    summary:
+      "Progressed from Stage 2 into escalation ownership and engineer enablement.",
+    themes: [
+      "Azure APIM, Resource Manager, Policy, Blueprint and Batch",
+      "VNet, Azure AD and certificate integrations",
+      "ARM templates and PowerShell automation",
+      "Azure Lighthouse and Managed Applications",
+      "Training and enabling Stage 2 engineers",
+    ],
+  },
+  {
+    company: "Tek Experts",
+    title: "Azure Developer Support Engineer Stage 2",
+    dates: "September 2019 – October 2021",
+    location: "Lagos State, Nigeria",
+    summary:
+      "Investigated complex Microsoft Azure infrastructure and platform issues with direct customer incident ownership.",
+    themes: [
+      "Structured troubleshooting and root-cause analysis",
+      "Cloud, networking and application dependencies",
+      "Engineering escalation and customer communication",
+    ],
+  },
+  {
+    company: "Klex Global Resources",
+    title: "Mobile and Web Developer",
+    dates: "October 2018 – October 2019",
+    location: "Lagos, Nigeria",
+    summary: "Built mobile applications, REST APIs and web experiences.",
+    themes: [
+      "Flutter and native Android / Java",
+      "JSON-based application integrations",
+      "Google Play publication and web development",
+    ],
+  },
+  {
+    company: "Logic Gate Ventures",
+    title: "Application and Software Developer",
+    dates: "March 2016 – December 2016",
+    location: "Minna, Nigeria",
+    summary: "Developed web and desktop applications and simulation models.",
+    themes: [
+      "HTML, CSS, JavaScript and PHP / MySQL",
+      "JavaFX / FXML and cPanel deployment",
+      "AnyLogic simulation and model development",
+    ],
+  },
+];
+export const expertise = [
+  {
+    title: "API & Integration",
+    items: [
+      "Tyk",
+      "REST",
+      "GraphQL",
+      "OpenAPI",
+      "API Gateway",
+      "Developer Portals",
+    ],
+    use: "Designing API platforms, guiding enterprise integrations and building migration tools that preserve developer access.",
+  },
+  {
+    title: "Cloud & Platform",
+    items: ["Kubernetes", "Helm", "Docker", "OpenShift", "Azure", "AWS", "GCP"],
+    use: "Turning infrastructure requirements into deployable cloud, hybrid and Kubernetes architectures, then troubleshooting them in production.",
+  },
+  {
+    title: "Identity & Security",
+    items: [
+      "OAuth 2.0",
+      "OIDC",
+      "JWT",
+      "mTLS",
+      "SAML",
+      "Certificate Authentication",
+    ],
+    use: "Aligning API authentication, identity integrations and certificate management with enterprise security requirements.",
+  },
+  {
+    title: "Data & Observability",
+    items: [
+      "Redis",
+      "PostgreSQL",
+      "MongoDB",
+      "Kafka",
+      "OpenTelemetry",
+      "Prometheus",
+    ],
+    use: "Tracing failures across distributed dependencies and helping teams understand platform behaviour through telemetry.",
+  },
+];
+export const certifications = [
+  {
+    title: "Azure Solutions Architect Expert",
+    issuer: "Microsoft Certified",
+    level: "Expert",
+    issued: "October 2021",
+    date: "2021-10",
+    badge: "microsoft-certified-expert.svg",
+    details:
+      "https://learn.microsoft.com/en-us/credentials/certifications/azure-solutions-architect/",
+  },
+  {
+    title: "Microsoft Azure Architect Technologies",
+    issuer: "Microsoft",
+    level: "AZ-303 · Exam",
+    issued: "April 2021",
+    date: "2021-04",
+    badge: "microsoft.svg",
+    details:
+      "https://learn.microsoft.com/en-us/credentials/certifications/exams/az-303/",
+  },
+  {
+    title: "Azure Administrator Associate",
+    issuer: "Microsoft Certified",
+    level: "Associate",
+    issued: "March 2021",
+    date: "2021-03",
+    badge: "microsoft-certified-associate.svg",
+    details:
+      "https://learn.microsoft.com/en-us/credentials/certifications/azure-administrator/",
+  },
+  {
+    title: "Azure Fundamentals",
+    issuer: "Microsoft Certified",
+    level: "Fundamentals",
+    issued: "December 2020",
+    date: "2020-12",
+    badge: "microsoft-certified-fundamentals.svg",
+    details:
+      "https://learn.microsoft.com/en-us/credentials/certifications/azure-fundamentals/",
+  },
+];

@@ -1,0 +1,143 @@
+domain: ataimo.com
+hostnames: [mail.ataimo.com, webmail.ataimo.com]
+existingSecret: mailu-credentials
+initialAccount:
+  enabled: true
+  username: admin
+  domain: ataimo.com
+  existingSecret: mailu-credentials
+  existingSecretPasswordKey: admin-password
+  mode: ifmissing
+externalRelay:
+  host: ''
+  existingSecret: ''
+  usernameKey: relay-username
+  passwordKey: relay-password
+  networks: []
+externalDatabase:
+  enabled: true
+  type: postgresql
+  host: postgres.database.svc.cluster.local
+  port: 5432
+  existingSecret: mailu-database
+mariadb:
+  enabled: false
+postgresql:
+  enabled: false
+global:
+  database:
+    roundcube:
+      database: roundcube
+      username: roundcube
+      existingSecret: roundcube-database
+      existingSecretPasswordKey: password
+persistence:
+  single_pvc: true
+  size: 20Gi
+  storageClass: local-path
+ingress:
+  enabled: false
+  tls: true
+  existingSecret: mail-tls
+  tlsFlavorOverride: mail
+  realIpHeader: X-Forwarded-For
+  realIpFrom: 10.42.0.0/16
+networkPolicy:
+  enabled: true
+  ingressController:
+    namespace: ingress
+    podSelector: |
+      matchLabels:
+        app.kubernetes.io/name: envoy
+        gateway.envoyproxy.io/owning-gateway-name: ataimo
+front:
+  updateStrategy: {type: Recreate, rollingUpdate: null}
+  hostPort:
+    enabled: false
+  externalService:
+    enabled: true
+    type: LoadBalancer
+    externalTrafficPolicy: Local
+    ports:
+      smtp: true
+      smtps: true
+      submission: true
+      imaps: true
+      imap: false
+      pop3: false
+      pop3s: false
+      manageSieve: false
+  extraEnvVars:
+    - name: PORTS
+      value: '25,80,465,587,993'
+  resources:
+    requests: {cpu: 25m, memory: 64Mi}
+    limits: {memory: 192Mi}
+admin:
+  updateStrategy: {type: Recreate, rollingUpdate: null}
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 384Mi}
+postfix:
+  updateStrategy: {type: Recreate, rollingUpdate: null}
+  overrides:
+    postfix.cf: |
+      mynetworks = 127.0.0.1/32
+      default_transport = retry:Outbound delivery pending SMTP relay setup
+      relay_transport = retry:Outbound delivery pending SMTP relay setup
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 384Mi}
+dovecot:
+  updateStrategy: {type: Recreate, rollingUpdate: null}
+  resources:
+    requests: {cpu: 50m, memory: 128Mi}
+    limits: {memory: 384Mi}
+rspamd:
+  updateStrategy: {type: Recreate, rollingUpdate: null}
+  resources:
+    requests: {cpu: 50m, memory: 256Mi}
+    limits: {memory: 512Mi}
+clamav:
+  enabled: false
+webmail:
+  updateStrategy: {type: Recreate, rollingUpdate: null}
+  enabled: true
+  type: roundcube
+  resources:
+    requests: {cpu: 25m, memory: 128Mi}
+    limits: {memory: 384Mi}
+webdav:
+  enabled: false
+fetchmail:
+  enabled: false
+oletools:
+  enabled: false
+tika:
+  enabled: false
+limits:
+  messageSizeLimitInMegabytes: 25
+  messageRatelimit:
+    value: 100/day
+tls:
+  outboundLevel: secure
+  deferOnError: 'True'
+redis:
+  master:
+    resourcesPreset: none
+    resources:
+      requests: {cpu: 20m, memory: 32Mi}
+      limits: {memory: 128Mi}
+    persistence:
+      size: 2Gi
+      storageClass: local-path
+  networkPolicy:
+    enabled: true
+    allowExternal: false
+customization:
+  siteName: Ataimo Mail
+  website: https://ataimo.com
+  logoUrl: https://ataimo.com/brand/ataimo-app-logo.png
+welcomeMessage:
+  enabled: false
+postmaster: admin

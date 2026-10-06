@@ -1,0 +1,90 @@
+{{- if .Values.resolver.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mail-resolver
+data:
+  unbound.conf: |
+    server:
+      interface: 0.0.0.0
+      do-ip6: no
+      do-daemonize: no
+      username: unbound
+      directory: /etc/unbound
+      auto-trust-anchor-file: /etc/unbound/trusted-key.key
+      access-control: 10.42.0.0/16 allow
+      access-control: 127.0.0.0/8 allow
+      hide-identity: yes
+      hide-version: yes
+      domain-insecure: cluster.local
+      private-domain: cluster.local
+      msg-cache-size: 8m
+      rrset-cache-size: 16m
+    forward-zone:
+      name: cluster.local
+      forward-addr: {{ .Values.resolver.clusterDNS }}
+    forward-zone:
+      name: .
+      forward-addr: 1.1.1.1
+      forward-addr: 1.0.0.1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mail-resolver
+spec:
+  selector: {app: mail-resolver}
+  ports:
+    - {name: dns-udp, port: 53, protocol: UDP}
+    - {name: dns-tcp, port: 53, protocol: TCP}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-resolver
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: mail-resolver}
+  template:
+    metadata:
+      labels: {app: mail-resolver}
+    spec:
+      containers:
+        - name: unbound
+          image: {{ .Values.resolver.image }}
+          command: [/usr/sbin/unbound]
+          args: [-d, -c, /config/unbound.conf]
+          resources:
+            requests: {cpu: 20m, memory: 32Mi}
+            limits: {memory: 128Mi}
+          readinessProbe:
+            exec:
+              command: [sh, -c, 'dig @127.0.0.1 example.org A +dnssec +time=2 +tries=1 | grep -q "flags:.* ad"']
+            initialDelaySeconds: 5
+            periodSeconds: 15
+            timeoutSeconds: 5
+          volumeMounts:
+            - {name: config, mountPath: /config, readOnly: true}
+      volumes:
+        - name: config
+          configMap: {name: mail-resolver}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: mail-resolver
+spec:
+  podSelector:
+    matchLabels: {app: mail-resolver}
+  policyTypes: [Ingress]
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app.kubernetes.io/instance: mailu
+      ports:
+        - {port: 53, protocol: UDP}
+        - {port: 53, protocol: TCP}
+{{- end }}

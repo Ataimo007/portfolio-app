@@ -1,0 +1,49 @@
+apiVersion: v1
+kind: Service
+metadata: {name: app}
+spec:
+  selector: {app: portfolio}
+  ports: [{name: http, port: 3000}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: app}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: portfolio}}
+  template:
+    metadata: {labels: {app: portfolio}}
+    spec:
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000}
+      containers:
+        - name: app
+          # Replace with the built application image in your registry before deployment.
+          image: ataimo-portfolio:local
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - configMapRef: {name: platform-config}
+          env:
+            - name: DATABASE_URL
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: DATABASE_URL}}
+            - name: AMQP_URL
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: AMQP_URL}}
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: KEYCLOAK_CLIENT_SECRET}}
+            - name: AUTH_SECRET
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: AUTH_SECRET}}
+            - name: SMTP_USER
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: SMTP_USER}}
+            - name: SMTP_PASSWORD
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: SMTP_PASSWORD}}
+            - {name: KEYCLOAK_CLIENT_ID, value: portfolio}
+            - {name: KEYCLOAK_INTERNAL_URL, value: 'http://keycloak:8080'}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          startupProbe:
+            httpGet: {path: /, port: 3000}
+            failureThreshold: 30
+          readinessProbe:
+            httpGet: {path: /, port: 3000}

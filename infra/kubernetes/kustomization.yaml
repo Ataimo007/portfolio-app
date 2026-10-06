@@ -1,0 +1,29 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: portfolio
+resources:
+  - namespace.yaml
+  - postgres.yaml
+  - broker.yaml
+  - keycloak.yaml
+  - app.yaml
+  - ingress.yaml
+configMapGenerator:
+  - name: postgres-init
+    files:
+      - postgres/00-databases.sh
+      - postgres/portal-schema.sql.inc
+  - name: keycloak-realm
+    files:
+      - keycloak/portfolio-realm.json
+  - name: platform-config
+    literals:
+      - SITE_URL=https://www.example.invalid
+      - PORTFOLIO_URL=https://www.example.invalid
+      - KEYCLOAK_ISSUER=https://auth.example.invalid/realms/portfolio
+      - KC_HOSTNAME=https://auth.example.invalid
+      - SMTP_HOST=smtp.example.invalid
+      - SMTP_PORT=587
+      - SMTP_FROM=no-reply@example.invalid
+      - SMTP_AUTH=true
+      - SMTP_STARTTLS=true

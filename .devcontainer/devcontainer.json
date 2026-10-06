@@ -1,0 +1,67 @@
+{
+  "name": "Ataimo Portfolio",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteUser": "node",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {},
+    "ghcr.io/devcontainers/features/kubectl-helm-minikube:1": {
+      "version": "1.37.1",
+      "helm": "4.3.0",
+      "minikube": "none"
+    },
+    "ghcr.io/devcontainers/features/azure-cli:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/terraform:1": {
+      "version": "1.14.6",
+      "tflint": "none",
+      "terragrunt": "none"
+    }
+  },
+  "forwardPorts": [
+    80
+  ],
+  "portsAttributes": {
+    "80": {
+      "label": "Envoy Gateway \u2014 all local sites",
+      "onAutoForward": "notify",
+      "requireLocalPort": true,
+      "protocol": "http"
+    }
+  },
+  "mounts": [
+    "source=ataimo-portfolio-codex,target=/home/node/.codex,type=volume",
+    "source=ataimo-portfolio-node-modules,target=${containerWorkspaceFolder}/node_modules,type=volume",
+    "source=ataimo-portfolio-azure,target=/home/node/.azure,type=volume"
+  ],
+  "postCreateCommand": "sudo chown node:node node_modules /home/node/.azure && chmod 700 /home/node/.azure && npm ci && npx playwright install --with-deps chromium",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "openai.chatgpt",
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        "bradlc.vscode-tailwindcss",
+        "ms-playwright.playwright",
+        "christian-kohler.path-intellisense",
+        "github.vscode-github-actions",
+        "eamodio.gitlens",
+        "ms-kubernetes-tools.vscode-kubernetes-tools",
+        "redhat.vscode-yaml",
+        "ms-vscode.azurecli",
+        "HashiCorp.terraform"
+      ],
+      "settings": {
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.quickSuggestions": {
+          "strings": "on"
+        },
+        "typescript.tsdk": "node_modules/typescript/lib"
+      }
+    }
+  },
+  "postStartCommand": "bash infra/local-kubernetes/scripts/devcontainer-start.sh"
+}

@@ -1,0 +1,49 @@
+{
+  "image": "ataimo-portfolio:kind-dev",
+  "port": 3000,
+  "env": [
+    {
+      "name": "SITE_URL",
+      "value": "http://ataimo.com"
+    },
+    {
+      "name": "KEYCLOAK_ISSUER",
+      "value": "http://keycloak.ataimo.com/realms/ataimo"
+    },
+    {
+      "name": "KEYCLOAK_INTERNAL_URL",
+      "value": "http://keycloak.identity.svc.cluster.local:8080"
+    },
+    {
+      "name": "ALLOW_LOCAL_HTTP",
+      "value": "true"
+    }
+  ],
+  "resources": {
+    "requests": {
+      "cpu": "100m",
+      "memory": "128Mi"
+    },
+    "limits": {
+      "memory": "512Mi"
+    }
+  },
+  "healthPath": "/api/health",
+  "securityContext": {
+    "runAsNonRoot": true,
+    "runAsUser": 1000,
+    "allowPrivilegeEscalation": false,
+    "capabilities": {
+      "drop": [
+        "ALL"
+      ]
+    }
+  },
+  "envFrom": [
+    {
+      "secretRef": {
+        "name": "portal-credentials"
+      }
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+routes:
+  - {name: portfolio, namespace: app, hostname: ataimo.com, service: portfolio, port: 3000}
+  - {name: keycloak, namespace: identity, hostname: keycloak.ataimo.com, service: keycloak, port: 8080}
+  - {name: grafana, namespace: monitoring, hostname: grafana.ataimo.com, service: monitoring-grafana, port: 80}
+  - {name: redpanda-console, namespace: streaming, hostname: redpanda.ataimo.com, service: redpanda-console, port: 8080}
+  - name: webmail
+    namespace: mail
+    hostname: webmail.ataimo.com
+    service: mailu-front
+    port: 80
+    tlsSecretName: mail-tls
+    tlsSecretNamespace: mail

@@ -1,0 +1,90 @@
+name: ataimo-consultancy
+services:
+  app:
+    profiles: [app]
+    build:
+      context: .
+      args:
+        SITE_URL: ${SITE_URL:-http://localhost:3002}
+    environment:
+      SITE_URL: ${SITE_URL:-http://localhost:3002}
+      DATABASE_URL: postgres://portal:${PORTAL_DB_PASSWORD:?Set PORTAL_DB_PASSWORD}@postgres:5432/portfolio
+      KEYCLOAK_ISSUER: ${KEYCLOAK_ISSUER:-http://localhost:8080/realms/portfolio}
+      KEYCLOAK_INTERNAL_URL: http://keycloak:8080
+      KEYCLOAK_CLIENT_ID: portfolio
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET}
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET}
+      AMQP_URL: amqp://portal:${BROKER_PASSWORD:?Set BROKER_PASSWORD}@broker:5672
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+    ports: ["127.0.0.1:3002:3000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      broker: {condition: service_healthy}
+      keycloak: {condition: service_started}
+    restart: unless-stopped
+  postgres:
+    image: postgres:17.9-bookworm
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      PORTAL_DB_PASSWORD: ${PORTAL_DB_PASSWORD:?Set PORTAL_DB_PASSWORD}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Set KEYCLOAK_DB_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/kubernetes/postgres:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.0
+    command: [start-dev, --import-realm]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?Set KEYCLOAK_DB_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:-admin}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      KC_HOSTNAME: http://localhost:8080
+      KC_HEALTH_ENABLED: "true"
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET}
+      PORTFOLIO_URL: ${SITE_URL:-http://localhost:3002}
+      SMTP_HOST: mailpit
+      SMTP_PORT: 1025
+      SMTP_FROM: no-reply@portfolio.test
+      SMTP_AUTH: "false"
+      SMTP_STARTTLS: "false"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+    ports: ["127.0.0.1:8080:8080"]
+    volumes: ["./infra/kubernetes/keycloak:/opt/keycloak/data/import:ro"]
+    depends_on:
+      postgres: {condition: service_healthy}
+    restart: unless-stopped
+  broker:
+    image: rabbitmq:4.3.6-management
+    environment:
+      RABBITMQ_DEFAULT_USER: portal
+      RABBITMQ_DEFAULT_PASS: ${BROKER_PASSWORD:?Set BROKER_PASSWORD}
+    ports: ["127.0.0.1:15672:15672"]
+    volumes: ["broker-data:/var/lib/rabbitmq"]
+    healthcheck:
+      test: [CMD, rabbitmq-diagnostics, -q, ping]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+  mailpit:
+    image: axllent/mailpit:v1.31.3
+    ports: ["127.0.0.1:8025:8025"]
+    volumes: ["mailpit-data:/data"]
+    environment:
+      MP_DATABASE: /data/mailpit.db
+    restart: unless-stopped
+volumes:
+  postgres-data:
+  broker-data:
+  mailpit-data:

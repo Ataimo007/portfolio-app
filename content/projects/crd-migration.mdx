@@ -1,0 +1,17 @@
+## The problem
+
+Moving Operator-managed resources between Kubernetes environments requires more than copying YAML. Cluster contexts and Operator references need to match the destination, and the original resources need a recoverable backup.
+
+## The workflow
+
+The utility automates discovery, backup, context-aware transformation and migration of Tyk Custom Resources. Validation and reporting make the resulting state inspectable; cleanup is an explicit part of the workflow.
+
+Resource concepts include API definitions, security policies, Operator contexts and portal configuration. These are architectural examples; check the repository for its supported resource types and execution requirements.
+
+## Engineering approach
+
+Bash and kubectl keep the workflow close to Kubernetes tooling. Context transformation connects the source resource model to the target environment instead of assuming both clusters are configured identically.
+
+## Technical evidence
+
+The public repository contains the implementation and usage instructions. The flow above illustrates the process without exposing customer infrastructure.

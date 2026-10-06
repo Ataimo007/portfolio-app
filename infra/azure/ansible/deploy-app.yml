@@ -1,0 +1,20 @@
+- name: Deploy portfolio changes to Azure K3s
+  hosts: k3s
+  become: true
+  tasks:
+    - name: Upload private source bundle
+      ansible.builtin.copy:
+        src: '{{ playbook_dir }}/../.local/source.tar.gz'
+        dest: /opt/ataimo/source.tar.gz
+        mode: '0600'
+    - name: Extract application source
+      ansible.builtin.unarchive:
+        src: /opt/ataimo/source.tar.gz
+        dest: /opt/ataimo
+        remote_src: true
+    - name: Build and deploy the application image
+      ansible.builtin.command: bash infra/azure/scripts/deploy-app-on-node.sh
+      args:
+        chdir: /opt/ataimo
+      register: deployment
+      changed_when: true

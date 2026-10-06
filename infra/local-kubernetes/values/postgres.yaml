@@ -1,0 +1,73 @@
+{
+  "image": "postgres:17.9-bookworm",
+  "port": 5432,
+  "persistence": {
+    "enabled": true,
+    "size": "4Gi",
+    "mountPath": "/var/lib/postgresql/data"
+  },
+  "env": [
+    {
+      "name": "POSTGRES_USER",
+      "value": "ataimo"
+    },
+    {
+      "name": "POSTGRES_DB",
+      "value": "portfolio"
+    },
+    {
+      "name": "POSTGRES_PASSWORD",
+      "valueFrom": {
+        "secretKeyRef": {
+          "name": "postgres-credentials",
+          "key": "password"
+        }
+      }
+    },
+    {
+      "name": "PGDATA",
+      "value": "/var/lib/postgresql/data/pgdata"
+    },
+    {
+      "name": "KEYCLOAK_DB_PASSWORD",
+      "valueFrom": {
+        "secretKeyRef": {
+          "name": "postgres-credentials",
+          "key": "keycloak-password"
+        }
+      }
+    },
+    {
+      "name": "PORTAL_DB_PASSWORD",
+      "valueFrom": {
+        "secretKeyRef": {
+          "name": "postgres-credentials",
+          "key": "portal-password"
+        }
+      }
+    },
+    {
+      "name": "GRAFANA_DB_PASSWORD",
+      "valueFrom": {
+        "secretKeyRef": {
+          "name": "postgres-credentials",
+          "key": "grafana-password"
+        }
+      }
+    }
+  ],
+  "configMountPath": "/docker-entrypoint-initdb.d",
+  "config": {
+    "01-keycloak.sql": "CREATE DATABASE keycloak;",
+    "02-roles.sh": "#!/usr/bin/env bash\nset -euo pipefail\npsql --username=\"$POSTGRES_USER\" --dbname=postgres --set=ON_ERROR_STOP=1 --set=kc_password=\"$KEYCLOAK_DB_PASSWORD\" --set=app_password=\"$PORTAL_DB_PASSWORD\" --set=grafana_password=\"$GRAFANA_DB_PASSWORD\" <<'SQL'\nSELECT 'CREATE ROLE keycloak LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'keycloak') \\gexec\nSELECT 'CREATE ROLE portal LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'portal') \\gexec\nSELECT 'CREATE ROLE grafana LOGIN' WHERE NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'grafana') \\gexec\nSELECT 'CREATE DATABASE grafana OWNER grafana' WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'grafana') \\gexec\nALTER ROLE grafana PASSWORD :'grafana_password';\nALTER DATABASE grafana OWNER TO grafana;\nREVOKE ALL ON DATABASE grafana FROM PUBLIC;\nALTER ROLE keycloak PASSWORD :'kc_password';\nALTER ROLE portal PASSWORD :'app_password';\nALTER DATABASE keycloak OWNER TO keycloak;\nALTER DATABASE portfolio OWNER TO portal;\nREVOKE ALL ON DATABASE keycloak FROM PUBLIC;\nREVOKE ALL ON DATABASE portfolio FROM PUBLIC;\nSQL\npsql --username=\"$POSTGRES_USER\" --dbname=keycloak --set=ON_ERROR_STOP=1 <<'SQL'\nALTER SCHEMA public OWNER TO keycloak;\nSELECT format('ALTER TABLE %I.%I OWNER TO keycloak', n.nspname, c.relname)\nFROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid\nWHERE n.nspname = 'public' AND c.relkind IN ('r', 'p') AND c.relowner <> 'keycloak'::regrole \\gexec\nSELECT format('ALTER SEQUENCE %I.%I OWNER TO keycloak', n.nspname, c.relname)\nFROM pg_class c JOIN pg_namespace n ON c.relnamespace = n.oid\nWHERE n.nspname = 'public' AND c.relkind = 'S' AND c.relowner <> 'keycloak'::regrole \\gexec\nSQL\npsql --username=\"$POSTGRES_USER\" --dbname=portfolio --set=ON_ERROR_STOP=1 -c 'ALTER SCHEMA public OWNER TO portal;'\npsql --username=\"$POSTGRES_USER\" --dbname=grafana --set=ON_ERROR_STOP=1 -c 'ALTER SCHEMA public OWNER TO grafana;'\n"
+  },
+  "resources": {
+    "requests": {
+      "cpu": "100m",
+      "memory": "128Mi"
+    },
+    "limits": {
+      "memory": "512Mi"
+    }
+  }
+}

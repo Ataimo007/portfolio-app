@@ -1,0 +1,51 @@
+{{- if not (has .Values.dns.provider (list "cloudflare" "azuredns")) }}
+{{- fail "Select the authoritative DNS provider: cloudflare or azuredns; other providers need their supported solver configuration." }}
+{{- end }}
+{{- if not (has .Values.environment (list "staging" "production")) }}
+{{- fail "ACME environment must be staging or production." }}
+{{- end }}
+{{- range $environment := list "staging" "production" }}
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-{{ $environment }}
+spec:
+  acme:
+    email: {{ required "Supply an ACME contact email" $.Values.email | quote }}
+    server: {{ ternary "https://acme-v02.api.letsencrypt.org/directory" "https://acme-staging-v02.api.letsencrypt.org/directory" (eq $environment "production") }}
+    privateKeySecretRef:
+      name: letsencrypt-{{ $environment }}-account
+    solvers:
+      - selector:
+          dnsZones: [{{ $.Values.dns.zone | quote }}]
+        dns01:
+          {{- if eq $.Values.dns.provider "cloudflare" }}
+          cloudflare:
+            apiTokenSecretRef:
+              name: {{ $.Values.dns.cloudflare.secretName }}
+              key: api-token
+          {{- else }}
+          azureDNS:
+            subscriptionID: {{ required "Supply Azure DNS subscription" $.Values.dns.azure.subscriptionID | quote }}
+            resourceGroupName: {{ required "Supply Azure DNS resource group" $.Values.dns.azure.resourceGroupName | quote }}
+            hostedZoneName: {{ $.Values.dns.zone | quote }}
+            environment: AzurePublicCloud
+            managedIdentity:
+              clientID: {{ required "Supply Azure DNS managed identity client ID" $.Values.dns.azure.managedIdentityClientID | quote }}
+          {{- end }}
+---
+{{- end }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: ataimo-gateway
+  namespace: ingress
+spec:
+  secretName: ataimo-gateway-tls
+  issuerRef:
+    name: letsencrypt-{{ .Values.environment }}
+    kind: ClusterIssuer
+  dnsNames: {{ toJson .Values.dnsNames }}
+  privateKey:
+    rotationPolicy: Always
+  renewBefore: 720h

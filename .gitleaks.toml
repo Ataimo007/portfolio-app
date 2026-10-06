@@ -1,0 +1,6 @@
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Public font filename used as a ConfigMap key"
+stopwords = ["Geist-Variable.woff2"]

@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: Service
+metadata: {name: broker}
+spec:
+  selector: {app: broker}
+  ports:
+    - {name: amqp, port: 5672}
+    - {name: management, port: 15672}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata: {name: broker}
+spec:
+  serviceName: broker
+  replicas: 1
+  selector: {matchLabels: {app: broker}}
+  template:
+    metadata: {labels: {app: broker}}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: rabbitmq
+          image: rabbitmq:4.3.6-management
+          env:
+            - {name: RABBITMQ_DEFAULT_USER, value: portal}
+            - name: RABBITMQ_DEFAULT_PASS
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: BROKER_PASSWORD}}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {memory: 1Gi}
+          readinessProbe:
+            exec: {command: [rabbitmq-diagnostics, -q, ping]}
+            initialDelaySeconds: 15
+          volumeMounts: [{name: data, mountPath: /var/lib/rabbitmq}]
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: local-path
+        resources: {requests: {storage: 5Gi}}

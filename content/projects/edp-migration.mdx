@@ -1,0 +1,25 @@
+## The problem
+
+Classic Developer Portal and Enterprise Developer Portal use different data models. Tyk does not ship a built-in Classic-to-EDP migration path that preserves existing developer access. A naive migration can mean rotating API keys, redistributing credentials and recreating developer accounts, with a risk of integration breakage and limited recovery options.
+
+## Preserving access through change
+
+The migration platform adopts existing API keys rather than re-minting them and preserves developer login credentials. The intent is continuity: existing integrations and developers can move to the new portal without forced credential redistribution.
+
+## A controlled migration lifecycle
+
+- **Discovery and backup:** establish what exists and preserve a recovery baseline.
+- **Dry-run planning:** inspect migration actions before making changes.
+- **Migration and reconciliation:** transfer portal resources and compare the resulting state.
+- **Idempotent execution:** support repeatable runs without unnecessarily duplicating resources.
+- **Append-only ledger:** maintain an audit trail of migration activity.
+- **Rollback and cutover:** keep recovery and controlled transition explicit.
+- **Delayed decommissioning:** retire the old environment only after the migration is ready.
+
+## Two interfaces, one engine
+
+A web wizard and scriptable CLI use the same underlying Go migration logic. This gives guided operation and automation a consistent execution model.
+
+## Technical evidence
+
+The full source is private. The linked public proof of concept provides a public entry point into the project. No private customer data or internal architecture is included here.

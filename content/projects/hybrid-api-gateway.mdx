@@ -1,0 +1,15 @@
+## A repeatable local environment
+
+Troubleshooting hybrid deployments is easier when the core runtime can be reproduced locally. This Docker Compose environment brings together Tyk Hybrid Gateway, analytics Pump and Redis, with remote control-plane / MDCB connectivity.
+
+## How the pieces connect
+
+The remote control plane connects to the gateway through the hybrid architecture. Redis supports the local runtime, while Pump participates in the analytics pipeline. The architecture flow is deliberately sanitised and contains no production endpoints.
+
+## Development and diagnostics
+
+The environment supports local gateway troubleshooting and analytics testing, with persistent or ephemeral Redis modes. Docker Compose keeps the services and their dependencies reproducible.
+
+## Technical evidence
+
+Use the repository instructions to supply your own configuration and credentials. No live customer environment is represented on this page.

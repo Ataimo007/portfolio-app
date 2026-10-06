@@ -1,0 +1,36 @@
+name: Portfolio quality
+on:
+  pull_request:
+  push:
+    branches-ignore: [main]
+  workflow_call:
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test -- --workers=1
+      - uses: azure/setup-helm@v4.3.1
+        with:
+          version: v4.3.0
+      - name: Validate deployment assets
+        run: |
+          python3 -m venv /tmp/ataimo-ci-tools
+          /tmp/ataimo-ci-tools/bin/pip install -r infra/azure/ci/requirements.txt
+          export PATH="/tmp/ataimo-ci-tools/bin:$PATH"
+          bash infra/azure/ci/check-assets.sh
+      - run: npm run build:platform
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: playwright-results
+          path: test-results/

@@ -1,0 +1,79 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: portfolio-migrations-{{ .Release.Revision }}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 180
+  template:
+    spec:
+      restartPolicy: Never
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toJson . }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+      containers:
+        - name: migrate
+          image: {{ .Values.image | quote }}
+          command: [node, scripts/migrate.cjs]
+          envFrom:
+            - secretRef:
+                name: portal-credentials
+          resources:
+            requests: {cpu: 50m, memory: 64Mi}
+            limits: {memory: 192Mi}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: portfolio-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels: {app: portfolio-worker}
+  template:
+    metadata:
+      labels: {app: portfolio-worker}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets: {{ toJson . }}
+      {{- end }}
+      automountServiceAccountToken: false
+      securityContext: {runAsNonRoot: true, runAsUser: 1000}
+      containers:
+        - name: worker
+          image: {{ .Values.workerImage | quote }}
+          envFrom:
+            - secretRef: {name: portal-credentials}
+            {{- if .Values.integrationSecret }}
+            - secretRef: {name: {{ .Values.integrationSecret | quote }}, optional: true}
+            {{- end }}
+          env:
+            - name: PLATFORM_ENVIRONMENT
+              value: {{ default "local-kind" .Values.environment | quote }}
+            - name: REDPANDA_BROKERS
+              value: redpanda-0.redpanda.streaming.svc.cluster.local:9093
+            - name: PROMETHEUS_URL
+              value: http://monitoring-kube-prometheus-prometheus.monitoring.svc.cluster.local:9090
+          ports: [{name: health, containerPort: 3001}]
+          startupProbe:
+            httpGet: {path: /health, port: health}
+            failureThreshold: 60
+            periodSeconds: 5
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet: {path: /health, port: health}
+            timeoutSeconds: 5
+          livenessProbe:
+            httpGet: {path: /health, port: health}
+            timeoutSeconds: 5
+            failureThreshold: 6
+          resources:
+            requests: {cpu: 50m, memory: 96Mi}
+            limits: {memory: 256Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}

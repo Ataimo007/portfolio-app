@@ -1,0 +1,72 @@
+# Client and owner workspace
+
+The existing public portfolio, social sign-in and design remain intact. Clients use `/portal`; owners can open `/admin` or the owner view of `/portal`. Access is determined by server-side Keycloak realm roles, never a URL or browser control.
+
+## Functionality
+
+Consultations follow requested → booked after owner approval → active when the owner starts work → completed. Pending requests can be withdrawn by their client. Owners can decline or cancel engagements. Competing approvals remain guarded by PostgreSQL exclusion constraints. Owners maintain up to 100 deliverables per engagement; clients see progress, and unfinished tasks prevent completion. Closed consultation conversations remain readable but cannot receive new messages. The engagement timeline records requests, approval, starting and completion.
+
+Private consultation chat and general direct conversations store messages in PostgreSQL. Direct conversations allow a client to contact the owner before booking. Active pages refresh conversations every three seconds; updates and lists refresh every ten seconds. This is polling, not a WebSocket connection. Server access checks isolate clients, and message nonces prevent duplicate retries. Redpanda transports metadata-only notification events through the transactional outbox.
+
+Profile settings save organization, optional phone and display timezone. Name and login email remain managed by the sign-in provider. The server-side session expires with the identity token, capped at 30 minutes; reopening after expiration requires sign-in. This implementation does not retain refresh tokens or promise persistent sign-in.
+
+The owner mailbox connects to the existing `ataimo@ataimo.com` account over TLS IMAP 993 and STARTTLS SMTP 587. `contact@` and `hello@` arrive there as aliases. Inbox and Sent display the newest 50 messages; email refreshes every minute while open. Messages display as plain text, with attachment names and an instruction to use the existing mail client for attachments. Sending and replying append a Sent copy after SMTP delivery. Nonces and delivery state prevent automatic resending after an ambiguous SMTP error. No mailbox password reaches the browser, and non-owner access is rejected. Mailbox management, attachment downloads and folder administration remain in the existing mail client/webmail.
+
+## Installation and notifications
+
+The manifest and 192/512 PNG icons make the HTTPS application installable. A native service worker handles notifications and provides an offline connection message. It never caches private API responses, messages, account data or email.
+
+In the workspace, open Profile. Android/desktop browsers with an installation prompt can use Install app. On iPhone, open the site in Safari, use Share → Add to Home Screen, then launch it from the home screen. Web Push on iPhone requires a supported iOS version and installation. Enable notifications from Profile; permission is requested only after that explicit action.
+
+Persisted VAPID keys identify the notification sender. Subscriptions belong to a user and device. Redpanda processing creates durable push deliveries; the worker retries transient failures and removes expired endpoints. Alerts reveal no message content, email subject or client details on the lock screen. A mailbox check every minute detects new arrivals and sends a generic owner alert; first-time setup establishes a baseline without notifying about historic mail. Notification delivery depends on browser/OS permission and its push provider, and can be delayed. Actual receipt on the owner's physical phone requires a device test.
+
+## Deployment
+
+Run `python3 infra/azure/scripts/configure-workspace.py` with the existing Azure kubeconfig. It preserves VAPID keys in ignored `.local/workspace-push-keys.json` (0600) and recovers existing cluster keys if that file is missing. It copies the existing Mailu mailbox credential into a separate `portal-integrations` Secret in the app namespace without printing its values. No credentials belong in Helm values committed to source control.
+
+The Helm service and worker charts accept `integrationSecret`; Azure deployment selects `portal-integrations`. Database migration 002 is additive apart from extending the job-status constraint. Migration 001 is unchanged. New tables contain tasks, timelines, direct chat, notification delivery and mail idempotency records. Rollback to an older image does not require dropping user data, though an older image will not understand the new booked stage.
+
+Owner access needs the intended owner's existing login email. Map that account to the owner role with `infra/local-kubernetes/scripts/manage-portal-user.py --context ataimo-azure <exact-identity-username> --role owner`, then sign in again and complete the required MFA enrollment. Successful owner sign-in persists notification recipient membership so notifications can arrive when a browser session is closed. Role revocation must also remove the corresponding `owner_accounts` record; a later non-owner sign-in removes it automatically. That table controls notification recipients only; API access still requires a valid owner session.
+
+## Verification boundaries
+
+`tests/workspace.spec.ts` uses demonstration fixtures for client/owner layout, access-state rendering, mailbox UI and PWA assets. It does not prove live SMTP or identity login. `tests/unit/push-delivery.mjs` uses a mocked push transport to check generic payloads, routing, expiration removal and retry scheduling.
+
+`tests/integration/workspace-cloud.mjs` creates temporary database profiles and opaque sessions against the Azure deployment. It validates real database/API authorization, lifecycle transitions, task completion protection, idempotent chat, client isolation, Redpanda notifications and mobile rendering. These controlled sessions deliberately bypass SSO and do not claim a new live social-provider login test. `WORKSPACE_MAIL_TEST=1` also sends a single self-addressed test email through the actual mail server, verifies Inbox and Sent, and removes only that uniquely tagged test email. Temporary profiles and associated records are removed in a finally block.
+
+Physical-phone installation and push receipt are not verified by desktop Chromium emulation. The owner's account authorization remains pending until the correct account is supplied.
+
+## Verified Azure release — 2026-10-06
+
+Current app and worker image tag: `azure-20261006072157`. Both Deployments are Ready with zero restarts after rollout; migration job 14 completed. Service and worker Helm releases use the separate integrations Secret. Deployment now waits for migration jobs before upgrading the app.
+
+- ESLint, TypeScript, Next production build and worker bundle passed. Runtime dependency audit reports zero vulnerabilities; the existing development-only ESLint dependency findings remain outside the runtime image.
+- Desktop/mobile suite: 59 of 60 cases passed together. One animated 3D canvas screenshot timed out waiting for stability; the isolated rerun passed. All ten relevant navigation/workspace cases passed after the final visual changes, and all four workspace cases passed after the device-account correction. These are automated Chromium checks, not a claim about every physical mobile browser.
+- Rollback-only SQL checks against Azure PostgreSQL passed migration creation, booked status, invalid-status rejection and one direct conversation per client. These checks left no schema or test rows behind. The real Helm migration subsequently applied migration 002 successfully.
+- Live cloud API and browser acceptance passed profile updates, request-and-approve booking, booked-to-active transitions, task progress and completion guard, private chat retries, cross-client access denial, read-only closed conversations and Redpanda notification processing. Phone-sized client and owner pages showed messages from the other participant with no horizontal overflow. Temporary database profiles/sessions and associated records were removed.
+- Live device API acceptance passed subscription registration, ownership transfer when switching accounts and opt-out. This used a temporary synthetic endpoint on otherwise unused test accounts and attempted no external push delivery. The mocked transport test separately passed transient retries and expired endpoint removal.
+- Actual SMTP/IMAP acceptance sent one uniquely labelled email to the existing mailbox, confirmed it in Inbox and Sent, and read both copies through the app. Retrying its nonce did not send another email. The two test message copies were removed by unique subject; other mailbox content was untouched.
+- `tests/integration/sso-cloud.mjs` passed a real temporary client login through the branded mobile form, authorization code/PKCE callback, the new profile schema, Secure/HttpOnly/SameSite cookies and logout. The temporary Keycloak identity and database profile were removed. This is a native-login verification; it does not claim new Google/LinkedIn/GitHub/Microsoft interactive tests.
+- `tests/integration/pwa-cloud.mjs` passed live HTTPS Chromium installability checks, manifest loading, service-worker registration, empty Cache API storage and offline recovery. No physical-phone installation or actual OS notification receipt is claimed.
+
+Reviewed captures: `.impeccable/review/workspace-mail-mobile.png`, `workspace-mail-desktop.png`, `workspace-live-client-mobile.png`, `workspace-live-owner-mobile.png` and `login-live-mobile.png`. Demonstration mailbox screenshots use fixtures; live chat screenshots use temporary acceptance accounts.
+
+Still needed: the correct owner's SSO login email, owner role/MFA enrollment, and an install/permission/notification test on the owner's physical phone. Existing custom mail clients continue working independently of the app.
+
+## Mobile navigation, architecture and public installation — 2026-10-06
+
+The homepage now enables the shared real R3F architecture on WebGL2-capable mobile browsers regardless of CPU core count. Camera progression still reads native scrolling inside `useFrame` with delta-based smoothing. Mobile renders at DPR 1, disables decorative particles and antialiasing, and uses a portrait perspective. The canvas remains mounted during scrolling; readiness is signalled after the actual textured model mounts. Reduced-motion preferences and unavailable/lost WebGL retain the static architecture fallback. This is not a physical-device FPS benchmark.
+
+A compact sticky mobile header keeps the monogram, email and phone visible, with a 48px hamburger control and accessible expandable navigation. The menu closes on navigation, outside interaction and Escape; nested Portfolio closes before its parent. Desktop navigation remains unchanged. The keyboard skip link remains focusable while visually hidden. Anonymous visitors can access `/install` from the mobile menu and global footer. A root installation provider captures the browser installation prompt before route changes and is shared with Profile settings. iPhone/iPad instructions use Safari Share → Add to Home Screen; installation itself does not authorize private workspace or notification access.
+
+Local evidence: ESLint, TypeScript and production build passed. The 66-case desktop/mobile suite passed 65 together; its remaining mobile route assertion was corrected to inspect navigation while collapsed, then all affected route, animation and install cases passed in targeted reruns (8 cases). Screenshots under `.impeccable/review/` show the loaded model at the hero and after scrolling. Installation prompt unit flows are simulated browser events; live Chromium installability and physical installation must be distinguished.
+
+Azure release `azure-20261006184513` is deployed for both app and worker, with Ready pods and zero restarts; migration job 15 completed. `tests/integration/mobile-layout-cloud.mjs` passed against real HTTPS at phone width: the textured mobile canvas renders at DPR 1 on simulated four-core hardware, stays mounted through scroll, the header remains sticky across public routes and the signed-out portal, installation is accessible anonymously, and reduced motion restores the static fallback. Reviewed live screenshots: `.impeccable/review/mobile-architecture-hero-live.png`, `mobile-architecture-scroll-live.png`, `public-install-mobile-live.png`. `tests/integration/pwa-cloud.mjs` again passed actual Chromium installability, service-worker registration and offline recovery. No physical-phone installation, FPS measurement or push receipt is claimed.
+
+### Direction-aware header and translucent contact scene
+
+The shared header now slides out on downward scrolling and returns on upward scrolling, using a passive native scroll listener batched with requestAnimationFrame and no React scroll state. An 8px direction threshold prevents small scroll fluctuations; top-of-page, open menus and keyboard focus retain access. Route changes reset visibility; listener/frame cleanup prevents accumulation. Only transform animates, with a 240ms token-based easing; reduced-motion disables the transition. The blue homepage contact scene uses a semantic 84%-opaque accent token so the real architecture can show through without lowering text opacity. No backdrop blur is introduced.
+
+ESLint, TypeScript and production build passed. Fourteen relevant desktop/mobile tests passed across the suite and the final targeted rerun; the rerun corrected a short-page test to scroll upward relative to its actual clamped scroll position. Tests cover exit/entry geometry, menu preservation, keyboard/reduced-motion behavior, public install/navigation and translucent background styling.
+
+Deployed app/worker release `azure-20261006190802`, both Deployments Ready. Live HTTPS mobile verification passed downward hide/upward return across projects, contact, signed-out portal and install, as well as the retained architecture/install/reduced-motion checks. Reviewed `.impeccable/review/contact-translucent-mobile-live.png`: real architecture lines remain visible through the blue contact scene while white copy, email and phone remain legible.

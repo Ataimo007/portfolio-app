@@ -1,0 +1,162 @@
+name: Build and deploy portfolio
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      route:
+        description: Existing VM updates app only; greenfield is allowed only when no VM or partial resources exist
+        type: choice
+        options: [auto, brownfield, greenfield]
+        default: auto
+permissions:
+  contents: read
+concurrency:
+  group: ataimo-production-delivery
+  cancel-in-progress: false
+jobs:
+  quality:
+    uses: ./.github/workflows/ci.yml
+  images:
+    needs: quality
+    runs-on: ubuntu-latest
+    environment: production
+    outputs:
+      app: ${{ steps.references.outputs.app }}
+      worker: ${{ steps.references.outputs.worker }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          username: ${{ vars.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Validate image repository settings
+        env:
+          APP_REPOSITORY: ${{ vars.DOCKERHUB_APP_REPOSITORY }}
+          WORKER_REPOSITORY: ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}
+        run: |
+          test -n "$APP_REPOSITORY"
+          test -n "$WORKER_REPOSITORY"
+      - name: Publish application
+        id: app
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: runtime
+          platforms: linux/amd64
+          push: true
+          tags: ${{ vars.DOCKERHUB_APP_REPOSITORY }}:sha-${{ github.sha }}
+          build-args: SITE_URL=https://ataimo.com
+          cache-from: type=gha,scope=portfolio
+          cache-to: type=gha,mode=max,scope=portfolio
+      - name: Publish worker
+        id: worker
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: worker
+          platforms: linux/amd64
+          push: true
+          tags: ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}:sha-${{ github.sha }}
+          build-args: SITE_URL=https://ataimo.com
+          cache-from: type=gha,scope=portfolio
+          cache-to: type=gha,mode=max,scope=worker
+      - name: Record immutable deployment images
+        id: references
+        env:
+          APP_REPOSITORY: ${{ vars.DOCKERHUB_APP_REPOSITORY }}
+          WORKER_REPOSITORY: ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}
+          APP_DIGEST: ${{ steps.app.outputs.digest }}
+          WORKER_DIGEST: ${{ steps.worker.outputs.digest }}
+        run: |
+          echo "app=docker.io/$APP_REPOSITORY@$APP_DIGEST" >> "$GITHUB_OUTPUT"
+          echo "worker=docker.io/$WORKER_REPOSITORY@$WORKER_DIGEST" >> "$GITHUB_OUTPUT"
+  deploy:
+    needs: images
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      AZURE_VM_NAME: ${{ vars.AZURE_VM_NAME || 'ataimo-platform' }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'ataimo-platform-rg' }}
+      AZURE_LOCATION: ${{ vars.AZURE_LOCATION || 'westeurope' }}
+      AZURE_VM_SIZE: ${{ vars.AZURE_VM_SIZE || 'Standard_D2as_v5' }}
+      AZURE_DNS_LABEL: ${{ vars.AZURE_DNS_LABEL || 'ataimo-platform' }}
+      AZURE_DNS_RESOURCE_GROUP: ${{ vars.AZURE_DNS_RESOURCE_GROUP || 'shared' }}
+      AZURE_ADMIN_CIDRS: ${{ vars.AZURE_ADMIN_CIDRS || '["0.0.0.0/0"]' }}
+      ACME_EMAIL: ${{ vars.ACME_EMAIL || 'edemataimo@gmail.com' }}
+      MAIL_ENABLED: ${{ vars.MAIL_ENABLED || 'true' }}
+      TF_STATE_RESOURCE_GROUP: ${{ vars.TF_STATE_RESOURCE_GROUP }}
+      TF_STATE_STORAGE_ACCOUNT: ${{ vars.TF_STATE_STORAGE_ACCOUNT }}
+      TF_STATE_CONTAINER: ${{ vars.TF_STATE_CONTAINER }}
+      TF_STATE_KEY: ${{ vars.TF_STATE_KEY || 'ataimo-platform.tfstate' }}
+      REQUESTED_ROUTE: ${{ inputs.route || 'brownfield' }}
+      APP_IMAGE: ${{ needs.images.outputs.app }}
+      WORKER_IMAGE: ${{ needs.images.outputs.worker }}
+      ANSIBLE_COLLECTIONS_PATH: ${{ github.workspace }}/infra/azure/.local/collections
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.13.5
+          terraform_wrapper: false
+      - uses: azure/setup-kubectl@v4
+        with:
+          version: v1.35.9
+      - uses: azure/setup-helm@v4.3.1
+        with:
+          version: v4.3.0
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+      - name: Install deployment tools
+        run: |
+          python3 -m venv infra/azure/.local/venv
+          infra/azure/.local/venv/bin/pip install -r infra/azure/ci/requirements.txt
+          echo "$PWD/infra/azure/.local/venv/bin" >> "$GITHUB_PATH"
+          infra/azure/.local/venv/bin/ansible-galaxy collection install -r infra/azure/ansible/requirements.yml -p "$ANSIBLE_COLLECTIONS_PATH"
+          npm ci --ignore-scripts --no-audit
+      - name: Inspect Azure and prepare private controller files
+        env:
+          AZURE_SSH_PRIVATE_KEY: ${{ secrets.AZURE_SSH_PRIVATE_KEY }}
+        run: python3 infra/azure/ci/prepare.py
+      - name: Provision a fresh VM with Terraform
+        if: env.DEPLOY_ROUTE == 'greenfield'
+        run: bash infra/azure/ci/greenfield.sh
+      - name: Connect and deploy registry images
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+        run: bash infra/azure/ci/connect.sh
+      - name: Configure fresh certificates, mail, workspace and DNS
+        if: env.DEPLOY_ROUTE == 'greenfield'
+        env:
+          SMTP2GO_USERNAME: ${{ secrets.SMTP2GO_USERNAME }}
+          SMTP2GO_PASSWORD: ${{ secrets.SMTP2GO_PASSWORD }}
+        run: bash infra/azure/ci/finish-greenfield.sh
+      - name: Verify application readiness
+        run: |
+          export KUBECONFIG="$PWD/infra/azure/.local/kubeconfig"
+          kubectl rollout status deployment/portfolio -n app --timeout=5m
+          kubectl rollout status deployment/portfolio-worker -n app --timeout=5m
+          python3 infra/azure/ci/verify.py
+      - name: Record deployment evidence
+        run: |
+          printf 'Route: %s\nApp: %s\nWorker: %s\n' "$DEPLOY_ROUTE" "$APP_IMAGE" "$WORKER_IMAGE" >> "$GITHUB_STEP_SUMMARY"
+      - name: Remove private controller files
+        if: always()
+        run: rm -rf infra/azure/.local infra/azure/terraform/backend.ci.tf

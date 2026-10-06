@@ -1,0 +1,20 @@
+image: ""
+port: 3000
+args: []
+env: []
+resources: {}
+persistence:
+  enabled: false
+  size: 2Gi
+  mountPath: /data
+config: {}
+configMountPath: /config
+healthPath: ""
+healthPort: service
+livenessPath: ""
+managementPort: 0
+monitoring: false
+
+integrationSecret: ""
+
+imagePullSecrets: []

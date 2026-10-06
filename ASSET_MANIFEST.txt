@@ -1,0 +1,16 @@
+PLAN.md
+README.md
+CODEX_PROMPT.md
+content/CONTACT.md
+content/EXPERIENCE.md
+content/PROJECTS.md
+notes/ASSET_TODO.md
+assets/portrait/ataimo-portrait-source.jpg
+assets/portrait/ataimo-portrait-4x5.webp
+assets/portrait/ataimo-portrait-4x5.jpg
+assets/portrait/ataimo-profile-square.webp
+assets/portrait/ataimo-profile-square.jpg
+assets/branding/linkedin-banner.png
+assets/resume/Ataimo_Edem_Professional_Resume.pdf
+assets/resume/Ataimo_Edem_Professional_Resume.docx
+assets/reference/LinkedIn_Profile_Export.pdf

@@ -1,0 +1,51 @@
+{
+  "statefulset": {
+    "replicas": 1
+  },
+  "resources": {
+    "cpu": {
+      "cores": 1,
+      "overprovisioned": true
+    },
+    "memory": {
+      "container": {
+        "max": "768Mi"
+      },
+      "redpanda": {
+        "memory": "512Mi",
+        "reserveMemory": "128Mi"
+      }
+    }
+  },
+  "storage": {
+    "persistentVolume": {
+      "enabled": true,
+      "size": "4Gi"
+    }
+  },
+  "external": {
+    "enabled": false
+  },
+  "console": {
+    "enabled": false
+  },
+  "tls": {
+    "enabled": false
+  },
+  "auth": {
+    "sasl": {
+      "enabled": false
+    }
+  },
+  "config": {
+    "cluster": {
+      "default_topic_replications": 1
+    }
+  },
+  "monitoring": {
+    "enabled": true,
+    "labels": {
+      "release": "monitoring"
+    }
+  }
+}

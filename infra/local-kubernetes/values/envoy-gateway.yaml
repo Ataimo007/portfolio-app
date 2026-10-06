@@ -1,0 +1,27 @@
+{
+  "deployment": {
+    "envoyGateway": {
+      "resources": {
+        "requests": {
+          "cpu": "100m",
+          "memory": "128Mi"
+        },
+        "limits": {
+          "memory": "384Mi"
+        }
+      },
+      "startupProbe": {
+        "periodSeconds": 2,
+        "failureThreshold": 60,
+        "timeoutSeconds": 5
+      },
+      "readinessProbe": {
+        "timeoutSeconds": 5
+      },
+      "livenessProbe": {
+        "timeoutSeconds": 5,
+        "failureThreshold": 6
+      }
+    }
+  }
+}

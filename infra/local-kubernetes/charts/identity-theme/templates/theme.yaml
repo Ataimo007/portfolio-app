@@ -1,0 +1,13 @@
+{{- $assetVersion := (.Files.Glob "files/ataimo/login/resources/css/*").AsConfig | sha256sum -}}
+{{- $properties := regexReplaceAll "portfolioUrl=[^\\n]*" (.Files.Get "files/ataimo/login/theme.properties") (printf "portfolioUrl=%s" .Values.portfolioUrl) -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ataimo-login-theme
+data:
+{{ (.Files.Glob "files/ataimo/login/*.ftl").AsConfig | indent 2 }}
+  theme.properties: {{ printf "%s\nataimoAssetVersion=%s\n" $properties $assetVersion | quote }}
+{{ (.Files.Glob "files/ataimo/login/messages/*").AsConfig | indent 2 }}
+{{ (.Files.Glob "files/ataimo/login/resources/css/*").AsConfig | indent 2 }}
+binaryData:
+{{ (.Files.Glob "files/ataimo/login/resources/fonts/*").AsSecrets | indent 2 }}

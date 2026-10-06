@@ -1,0 +1,12 @@
+email: ""
+environment: staging
+dnsNames: [ataimo.com, keycloak.ataimo.com, grafana.ataimo.com, redpanda.ataimo.com]
+dns:
+  provider: ""
+  zone: ataimo.com
+  cloudflare:
+    secretName: dns-challenge-credentials
+  azure:
+    subscriptionID: ""
+    resourceGroupName: ""
+    managedIdentityClientID: ""

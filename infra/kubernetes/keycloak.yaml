@@ -1,0 +1,56 @@
+apiVersion: v1
+kind: Service
+metadata: {name: keycloak}
+spec:
+  selector: {app: keycloak}
+  ports: [{name: http, port: 8080}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: keycloak}
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector: {matchLabels: {app: keycloak}}
+  template:
+    metadata: {labels: {app: keycloak}}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: keycloak
+          image: quay.io/keycloak/keycloak:26.8.0
+          args: [start, --import-realm]
+          envFrom:
+            - configMapRef: {name: platform-config}
+          env:
+            - name: KEYCLOAK_CLIENT_SECRET
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: KEYCLOAK_CLIENT_SECRET}}
+            - name: SMTP_USER
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: SMTP_USER}}
+            - name: SMTP_PASSWORD
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: SMTP_PASSWORD}}
+            - {name: KC_DB, value: postgres}
+            - {name: KC_DB_URL, value: 'jdbc:postgresql://postgres:5432/keycloak'}
+            - {name: KC_DB_USERNAME, value: keycloak}
+            - name: KC_DB_PASSWORD
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: KEYCLOAK_DB_PASSWORD}}
+            - {name: KC_BOOTSTRAP_ADMIN_USERNAME, value: admin}
+            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+              valueFrom: {secretKeyRef: {name: platform-secrets, key: KEYCLOAK_ADMIN_PASSWORD}}
+            - {name: KC_HTTP_ENABLED, value: 'true'}
+            - {name: KC_PROXY_HEADERS, value: xforwarded}
+            - {name: KC_HEALTH_ENABLED, value: 'true'}
+            - {name: JAVA_OPTS_KC_HEAP, value: '-Xms256m -Xmx768m'}
+          resources:
+            requests: {cpu: 200m, memory: 768Mi}
+            limits: {memory: 1536Mi}
+          startupProbe:
+            httpGet: {path: /health/started, port: 9000}
+            failureThreshold: 60
+            periodSeconds: 5
+          readinessProbe:
+            httpGet: {path: /health/ready, port: 9000}
+          volumeMounts: [{name: realm, mountPath: /opt/keycloak/data/import, readOnly: true}]
+      volumes:
+        - name: realm
+          configMap: {name: keycloak-realm}

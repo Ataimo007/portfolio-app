@@ -1,0 +1,27 @@
+{
+  "fullnameOverride": "redpanda-console",
+  "config": {
+    "kafka": {
+      "brokers": [
+        "redpanda-0.redpanda.streaming.svc.cluster.local:9093"
+      ]
+    },
+    "redpanda": {
+      "adminApi": {
+        "enabled": true,
+        "urls": [
+          "http://redpanda-0.redpanda.streaming.svc.cluster.local:9644"
+        ]
+      }
+    }
+  },
+  "resources": {
+    "requests": {
+      "cpu": "100m",
+      "memory": "64Mi"
+    },
+    "limits": {
+      "memory": "256Mi"
+    }
+  }
+}

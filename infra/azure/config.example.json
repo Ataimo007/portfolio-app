@@ -1,0 +1,13 @@
+{
+  "domain": "ataimo.com",
+  "acme_email": "REPLACE_WITH_YOUR_EMAIL",
+  "dns": {
+    "provider": "REPLACE_WITH_cloudflare_OR_azuredns",
+    "zone": "ataimo.com",
+    "azure": {
+      "subscriptionID": "",
+      "resourceGroupName": "",
+      "managedIdentityClientID": ""
+    }
+  }
+}
