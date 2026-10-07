@@ -148,3 +148,8 @@ Validated workflow syntax with actionlint, Terraform configuration with `validat
 ## 2026-10-07 — Navbar correction deployed
 
 Desktop header now remains visible/stationary on the actual Azure release. Mobile offset follows native scroll distance directly rather than a timed direction-triggered animation. Focus/menu/reduced-motion/resize safeguards remain. Image `azure-20261007063519` is deployed, with real HTTPS desktop/mobile acceptance passing. Gateway recovery and capacity-aware Helm rollout settings are recorded in `infra/azure/VALIDATION.md`. GitHub/Docker Hub credentials and repository destination remain pending; this release used the existing authorized direct deployment path.
+
+
+## 2026-10-07 — CI/CD activated and verified
+
+Source and automation are pushed to https://github.com/Ataimo007/portfolio-app. The first successful delivery run https://github.com/Ataimo007/portfolio-app/actions/runs/37696878695 passed all 68 desktop/mobile tests and infrastructure checks, published the app/worker to Docker Hub, and deployed immutable digests to the existing Azure K3s VM via OIDC/SSH/Ansible/Helm. Brownfield updated only application releases and completed the migration; all 17 dependency releases were preserved. Live HTTPS, navigation/PWA acceptance and fresh public Prometheus telemetry passed. Full image references and evidence are in `infra/azure/VALIDATION.md`. Main pushes now trigger app updates automatically. The manual empty-target greenfield path remains statically validated, not live-provisioned.

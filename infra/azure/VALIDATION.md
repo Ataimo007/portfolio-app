@@ -174,3 +174,19 @@ Live HTTPS acceptance (`tests/integration/scroll-header-cloud.mjs`) passed at 39
 Created dedicated `ataimo-terraform-rg` / `ataimotfstate` / private `tfstate` container in West Europe. Standard LRS StorageV2, TLS 1.2 minimum/HTTPS, public blob access and shared-key authentication disabled; blob versioning and 30-day blob/container recovery configured. Current administrator granted Blob Data Contributor.
 
 Backed up existing state privately, confirmed destination `ataimo-platform.tfstate` absent, and migrated using the partial Azure backend. Terraform acquired/released the state lock. Remote lineage, all 15 resource identities/addresses and outputs match the local backup exactly; remote blob is present and unlocked. No infrastructure apply, resource recreation or workload deployment performed. CI backend initialization now uses the committed partial `backend.tf`. The future GitHub OIDC principal still needs its own state-data role assignment. GitHub variable values are documented in `infra/azure/state/README.md`.
+
+
+## 2026-10-07 — First real GitHub Actions delivery
+
+Repository: https://github.com/Ataimo007/portfolio-app. Run https://github.com/Ataimo007/portfolio-app/actions/runs/37696878695 completed successfully for source commit `638c779`, after correcting Azure trust to match GitHub's exact ID-qualified production OIDC subject. All 68 desktop/mobile browser tests, lint, typecheck, production build, four infrastructure unit tests, Helm checks, Ansible syntax and worker bundling passed. The earlier run stopped at page-load timeouts; serving the packaged WebP portrait directly removed the image-optimizer dependency and the complete GitHub suite passed. A local targeted browser run still had request timeouts and is not reported as passing.
+
+Published and deployed immutable images:
+
+- App: `docker.io/ataimo007/ataimo-portfolio@sha256:c508527d3472577e5bb6155436bee2cb807f5e472aa5c8a0b62f97f089feae5e`
+- Worker/migration: `docker.io/ataimo007/ataimo-portfolio-worker@sha256:7991119a0bb1de60909ebc339f71bacf7879c4fc97fd34d403405f9d79ac49cb`
+
+Actions detected the existing Azure VM and selected brownfield. Azure OIDC, authenticated host-key verification, dedicated SSH access, Kubernetes pull credentials, remote Ansible deployment and registry-based Helm updates all executed successfully. Migration 18 completed; app and worker were Ready with zero restarts. `portfolio` changed from revision 21 to 22 and `portal-jobs` from 17 to 18. All other 17 Helm releases retained their revisions. No Terraform apply, dependency reinstall or local image import occurred.
+
+Actions verified live TLS homepage, anonymous install page and application health. Controller live acceptance passed desktop stationary/mobile proportional header behavior, menu/reduced-motion behavior, Chromium PWA installability, service worker, private-cache exclusion and offline recovery. Public telemetry returned `mode=live`, `environment=azure-k3s`, `overall=healthy`, `stale=false`, source `prometheus` with a fresh timestamp. These are actual deployed measurements. No demonstration data was added. Physical-phone push remains the previously documented device-level check; no new claim of provider login or mailbox delivery testing is made here.
+
+Greenfield Terraform/Ansible/dependency/TLS/mail automation remains implemented and statically validated, but fresh-cloud provisioning has not been executed. The current infrastructure was preserved. Main pushes now perform image publication and app-only delivery; explicit greenfield runs require a genuinely empty target and state.
