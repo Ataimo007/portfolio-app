@@ -6,7 +6,7 @@ import { MathUtils, Vector3 } from "three";
 
 export const CAMERA_POSES = {
   hero: { position: [14, 16, 24], target: [0, 0, -1] },
-  architecture: { position: [0, 27, 0.1], target: [0, 0, 0] },
+  architecture: { position: [1, 42, -3.9], target: [1, 0, -4] },
   contact: { position: [2.8, 1.5, 3.6], target: [1.2, 0.3, 0.4] },
 } as const;
 

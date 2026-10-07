@@ -48,6 +48,20 @@ export default function PlatformShowcase({
             and deployed through Helm. Envoy Gateway routes encrypted traffic;
             cert-manager manages Let’s Encrypt certificates through Azure DNS.
           </p>
+          <p>
+            <Link
+              className="text-link"
+              href="https://github.com/Ataimo007/portfolio-app"
+            >
+              Explore the source on GitHub <ArrowUpRight size={16} />
+            </Link>
+          </p>
+          <p>
+            GitHub Actions tests and publishes the app and worker to Docker Hub.
+            Fresh deployments use Terraform for Azure and Ansible for K3s;
+            existing deployments update only the application through Helm and
+            kubectl.
+          </p>
           <dl className="platform-routes">
             {publicRoutes.map(([host, service]) => (
               <div key={host}>

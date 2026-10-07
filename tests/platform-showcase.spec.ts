@@ -102,6 +102,18 @@ test("layered architecture separates private services and external relay", async
   );
   await page.goto("/platform");
   const diagram = page.locator(".platform-diagram svg");
+  await expect(diagram.locator('[data-layer="-1"]')).toHaveCount(6);
+  await expect(
+    diagram.locator('[data-from="registry"][data-to="helm"]'),
+  ).toHaveCount(1);
+  await page.getByRole("button", { name: "Terraform", exact: true }).click();
+  await expect(page.locator("figcaption")).toContainText("Greenfield only");
+  await page
+    .getByRole("button", { name: "Helm + kubectl", exact: true })
+    .click();
+  await expect(page.locator("figcaption")).toContainText(
+    "brownfield upgrades app and worker only",
+  );
   await expect(diagram.locator('[data-layer="2"]')).toHaveCount(5);
   await expect(diagram.locator('[data-layer="3"]')).toHaveCount(4);
   await expect(

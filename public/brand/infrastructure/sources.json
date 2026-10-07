@@ -6,5 +6,11 @@
   "mailu": "https://raw.githubusercontent.com/Mailu/Mailu/master/docs/assets/logo.svg",
   "postgres": "https://www.postgresql.org/media/img/about/press/elephant.png",
   "redpanda": "https://cdn.prod.website-files.com/68ed36e99e31581dedf5dc7c/68ed36e99e31581dedf5dce4_a5720d179e00645b59a680ca40cc9200_redpanda-logo-red.svg",
-  "smtp2go": "https://www.smtp2go.com/assets/images/v3/ui/logo.svg"
+  "smtp2go": "https://www.smtp2go.com/assets/images/v3/ui/logo.svg",
+  "github": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/github.svg",
+  "githubactions": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/githubactions.svg",
+  "docker": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/docker.svg",
+  "terraform": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/terraform.svg",
+  "ansible": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/ansible.svg",
+  "helm": "https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/helm.svg"
 }

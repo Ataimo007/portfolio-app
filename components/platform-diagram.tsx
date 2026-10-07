@@ -87,19 +87,22 @@ export default function PlatformDiagram({
           <svg
             ref={svg}
             className={model ? "diagram-hidden" : undefined}
-            viewBox="0 0 1600 835"
+            viewBox="0 0 1600 1025"
             role="img"
             aria-labelledby={`${id}-title ${id}-desc`}
           >
             <title id={`${id}-title`}>Ataimo platform infrastructure</title>
             <desc id={`${id}-desc`}>
-              Traffic progresses from external clients to Envoy Gateway, then a
-              row of portfolio, Grafana, Keycloak, Redpanda Console and Mailu
-              services, then PostgreSQL, Redpanda broker and Prometheus. These
-              internal components run on one Azure VM with K3s. SMTP2GO is
-              outside the VM, an external outbound port 25 workaround using TLS
-              587. SMTP and IMAP bypass HTTP ingress. Moving signals illustrate
-              direction and are not live packet traces.
+              GitHub source feeds Actions, Docker Hub images and Terraform,
+              Ansible and Helm delivery. Greenfield provisions infrastructure;
+              existing stacks receive app-only updates. Traffic progresses from
+              external clients to Envoy Gateway, then a row of portfolio,
+              Grafana, Keycloak, Redpanda Console and Mailu services, then
+              PostgreSQL, Redpanda broker and Prometheus. These internal
+              components run on one Azure VM with K3s. SMTP2GO is outside the
+              VM, an external outbound port 25 workaround using TLS 587. SMTP
+              and IMAP bypass HTTP ingress. Moving signals illustrate direction
+              and are not live packet traces.
             </desc>
             <defs>
               <marker
@@ -127,17 +130,17 @@ export default function PlatformDiagram({
             </defs>
             <rect
               x="40"
-              y="160"
+              y="350"
               width="1205"
               height="620"
               rx="16"
               fill="var(--color-bg-subtle)"
               stroke="var(--color-border-grid)"
             />
-            <text x="72" y="200" className="architecture-boundary-title">
+            <text x="72" y="390" className="architecture-boundary-title">
               ONE AZURE VM
             </text>
-            <text x="72" y="226" className="architecture-boundary-description">
+            <text x="72" y="416" className="architecture-boundary-description">
               K3s · Helm · Docker containers
             </text>
             <text x="72" y="333" className="architecture-layer-label">
@@ -153,7 +156,9 @@ export default function PlatformDiagram({
               const a = infrastructure.find((n) => n.id === from)!,
                 b = infrastructure.find((n) => n.id === to)!;
               const external =
-                to === "relay" || (from === "client" && to === "mail");
+                a.layer === -1 ||
+                to === "relay" ||
+                (from === "client" && to === "mail");
               return (
                 <g key={`${from}-${to}`}>
                   <path
@@ -194,9 +199,9 @@ export default function PlatformDiagram({
             })}
             <text
               x="1214"
-              y="320"
+              y="510"
               className="architecture-protocol"
-              transform="rotate(90 1214 320)"
+              transform="rotate(90 1214 510)"
             >
               SMTP / IMAP · direct mail access
             </text>
@@ -277,11 +282,15 @@ export default function PlatformDiagram({
                 </g>
               );
             })}
-            <text x="72" y="750" className="architecture-boundary-description">
+            <text x="72" y="940" className="architecture-boundary-description">
               cert-manager + Let’s Encrypt · Azure DNS · single node, no high
               availability
             </text>
-            <text x="72" y="815" className="architecture-boundary-description">
+            <text x="72" y="190" className="architecture-boundary-description">
+              GitHub → Actions → Docker Hub · fresh: Terraform + Ansible ·
+              existing: app-only Helm rollout
+            </text>
+            <text x="72" y="1005" className="architecture-boundary-description">
               Arrows show request, database, event and metrics-query direction.
               Prometheus scrapes the cluster independently.
             </text>

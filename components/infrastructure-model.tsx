@@ -83,13 +83,32 @@ function Flow({
 }) {
   const dot = useRef<Mesh>(null);
   const path = useMemo(() => {
-    const a = new Vector3(from.position[0], 0.12, from.position[2] + 0.9);
-    const b = new Vector3(to.position[0], 0.12, to.position[2] - 0.9);
-    const lane = from.id === "gateway" ? -2 : (a.z + b.z) / 2;
-    const points =
+    const lateral = from.layer === -1 && from.position[2] === to.position[2];
+    const a = new Vector3(
+      from.position[0] + (lateral ? 1.3 : 0),
+      0.12,
+      from.position[2] + (lateral ? 0 : 0.9),
+    );
+    const b = new Vector3(
+      to.position[0] - (lateral ? 1.3 : 0),
+      0.12,
+      to.position[2] - (lateral ? 0 : 0.9),
+    );
+    const lane = lateral
+      ? b.x - a.x > 2
+        ? -15
+        : a.z
+      : from.id === "gateway"
+        ? -2
+        : (a.z + b.z) / 2;
+    const routed =
       from.id === "client" && to.id === "mail"
         ? [a, new Vector3(9, 0.12, a.z), new Vector3(9, 0.12, b.z), b]
         : [a, new Vector3(a.x, 0.12, lane), new Vector3(b.x, 0.12, lane), b];
+    const points = routed.filter(
+      (point, index) =>
+        index === 0 || point.distanceTo(routed[index - 1]) > 0.001,
+    );
     const distances = points.slice(1).map((p, i) => p.distanceTo(points[i]));
     const total = distances.reduce((a, b) => a + b, 0);
     const direction = b
@@ -187,7 +206,13 @@ export default function InfrastructureModel({
           key={`${from}-${to}`}
           from={infrastructure.find((n) => n.id === from)!}
           to={infrastructure.find((n) => n.id === to)!}
-          color={to === "relay" ? palette.warm : palette.primary}
+          color={
+            from === "repository" ||
+            infrastructure.find((n) => n.id === from)!.layer === -1 ||
+            to === "relay"
+              ? palette.warm
+              : palette.primary
+          }
           signals={signals}
         />
       ))}

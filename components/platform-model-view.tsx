@@ -1,8 +1,25 @@
 "use client";
-import { Component, Suspense, useEffect, useRef, useState } from "react";
-import { Canvas } from "@react-three/fiber";
+import {
+  Component,
+  Suspense,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
+import { Canvas, useThree } from "@react-three/fiber";
 import { OrbitControls } from "@react-three/drei";
 import InfrastructureModel from "./infrastructure-model";
+function FitModel() {
+  const { get, size, invalidate } = useThree();
+  useLayoutEffect(() => {
+    const camera = get().camera;
+    camera.zoom = Math.min(size.width / 29, size.height / 25);
+    camera.updateProjectionMatrix();
+    invalidate();
+  }, [get, size.width, size.height, invalidate]);
+  return null;
+}
 class Boundary extends Component<
   { children: React.ReactNode; onFailure: () => void },
   { failed: boolean }
@@ -54,7 +71,7 @@ export default function PlatformModelView({
           frameloop={active ? "always" : "demand"}
           orthographic
           dpr={[1, 1.5]}
-          camera={{ position: [1, 18, 20], zoom: 42 }}
+          camera={{ position: [1, 18, 17], zoom: 42 }}
           gl={{ alpha: true, antialias: true }}
           onCreated={({ gl }) => {
             gl.setClearColor(
@@ -68,11 +85,12 @@ export default function PlatformModelView({
             });
           }}
         >
+          <FitModel />
           <Suspense fallback={null}>
             <InfrastructureModel labels signals={active} />
           </Suspense>
           <OrbitControls
-            target={[1, 0, -1]}
+            target={[1, 0, -4]}
             enableZoom={false}
             enablePan={false}
             minPolarAngle={0.3}

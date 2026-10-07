@@ -38,3 +38,16 @@ infra/azure/terraform/backend.ci.tf
 .agents/skills/**/node_modules/
 .codex/skill-backups/
 image.png
+
+# Local authoring tools, handoff material and original asset sources
+.agents/
+.codex/
+.impeccable/
+notes/
+assets/
+skills-lock.json
+.codexrules
+ASSET_MANIFEST.txt
+ATAIMO_PLATFORM_HANDOFF.md
+CODEX_PROMPT.md
+PLAN.md
