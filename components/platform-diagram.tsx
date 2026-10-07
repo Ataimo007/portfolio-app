@@ -143,13 +143,13 @@ export default function PlatformDiagram({
             <text x="72" y="416" className="architecture-boundary-description">
               K3s · Helm · Docker containers
             </text>
-            <text x="72" y="333" className="architecture-layer-label">
+            <text x="72" y="523" className="architecture-layer-label">
               INGRESS
             </text>
-            <text x="72" y="385" className="architecture-layer-label">
+            <text x="72" y="575" className="architecture-layer-label">
               APPLICATION SERVICES
             </text>
-            <text x="72" y="619" className="architecture-layer-label">
+            <text x="72" y="809" className="architecture-layer-label">
               DATA · EVENTS · METRICS
             </text>
             {infrastructureEdges.map(([from, to], index) => {
