@@ -62,11 +62,11 @@ See [GitHub Azure OIDC](https://docs.github.com/en/actions/how-tos/secure-your-w
 
 ## Remote Terraform state
 
-Provision a dedicated private Azure Storage account/container outside the workload module. Disable public blob access, enable blob versioning and soft delete, and grant the OIDC principal Blob Data Contributor. CI generates an ignored `backend.ci.tf` for the Azure backend and uses OIDC/Azure AD authentication with state locking. It never uploads state, plans, kubeconfig or private controller files as workflow artifacts.
+Provision a dedicated private Azure Storage account/container outside the workload module. Disable public blob access, enable blob versioning and soft delete, and grant the OIDC principal Blob Data Contributor. The committed partial `backend.tf` is initialized using the configured identifiers and OIDC/Azure AD authentication with state locking. It never uploads state, plans, kubeconfig or private controller files as workflow artifacts.
 
-The currently deployed stack has local state in `infra/azure/terraform/terraform.tfstate`, which remains ignored. Before using Terraform to manage that existing infrastructure from another controller, migrate this state to the remote backend; do not create a second empty state and apply against the live stack. Brownfield app updates work without migrating that state.
+The current stack’s state was migrated to the Azure backend on 2026-10-07; see [remote state settings](../state/README.md). Private local backups remain ignored. Before managing this infrastructure from another controller, initialize that same remote backend; do not create a second empty state and apply against the live stack. Brownfield app updates work without migrating that state.
 
-To migrate deliberately from the logged-in controller, back up local state in private storage, create the ignored backend block, then run `terraform init -migrate-state` with the chosen resource group, storage account, container and key. Use `use_azuread_auth=true` and the local Azure CLI identity for that migration; CI uses `use_oidc=true`. Verify `terraform state list` contains the current resources before removing the private backup. No migration is executed automatically by the pipeline.
+To migrate deliberately from the logged-in controller, back up local state in private storage, use the committed partial backend block, then run `terraform init -migrate-state` with the chosen resource group, storage account, container and key. Use `use_azuread_auth=true` and the local Azure CLI identity for that migration; CI uses `use_oidc=true`. Verify `terraform state list` contains the current resources before removing the private backup. No migration is executed automatically by the pipeline.
 
 ## First run and later pushes
 
@@ -81,3 +81,5 @@ Public web/IP records are created only after fresh TLS and workload readiness. C
 ## Verification status
 
 Local application lint/typecheck/build and all 68 desktop/mobile tests passed. Routing and non-destructive-plan unit tests passed. Helm lint/rendering verifies private pull credentials on app, migration and worker. Ansible syntax and actionlint validate the new deployment definitions. Secret scanning excludes private state, environment files, keys and controller artifacts. A real GitHub run, Docker Hub publication, registry-pull rollout and fresh-cloud provisioning remain unverified until repository/authentication and deployment settings are supplied.
+
+Remote state is provisioned: `TF_STATE_RESOURCE_GROUP=ataimo-terraform-rg`, `TF_STATE_STORAGE_ACCOUNT=ataimotfstate`, `TF_STATE_CONTAINER=tfstate`, `TF_STATE_KEY=ataimo-platform.tfstate`. The existing 15-resource state was migrated and verified without applying cloud-resource changes. Grant the deployment OIDC identity Blob Data Contributor on that state storage before infrastructure runs.

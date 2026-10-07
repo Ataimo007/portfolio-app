@@ -5,9 +5,6 @@ CLOUD="$(cd "$(dirname "$0")/.." && pwd)"
 : "${TF_STATE_RESOURCE_GROUP:?Configure remote state}"
 : "${TF_STATE_STORAGE_ACCOUNT:?Configure remote state}"
 : "${TF_STATE_CONTAINER:?Configure remote state}"
-cat > "$CLOUD/terraform/backend.ci.tf" <<'BACKEND'
-terraform { backend "azurerm" {} }
-BACKEND
 export TF_VAR_subscription_id="$ARM_SUBSCRIPTION_ID"
 export TF_VAR_location="${AZURE_LOCATION:-westeurope}"
 export TF_VAR_name="${AZURE_VM_NAME:-ataimo-platform}"
