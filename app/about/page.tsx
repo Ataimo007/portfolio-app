@@ -12,6 +12,7 @@ export default function About() {
         <Image
           className="portrait"
           src="/images/ataimo-portrait-4x5.webp"
+          unoptimized
           alt="Ataimo Edem, Customer Success Engineer and solutions architect"
           width={640}
           height={800}

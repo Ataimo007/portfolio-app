@@ -250,6 +250,7 @@ export default function Home() {
           <div className="engineer-portrait" data-reveal="grid-card">
             <Image
               src="/images/ataimo-portrait-4x5.webp"
+              unoptimized
               alt="Ataimo Edem"
               width={800}
               height={1000}
