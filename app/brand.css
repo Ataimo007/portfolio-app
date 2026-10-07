@@ -1125,26 +1125,18 @@ footer strong {
 }
 
 .site-header {
+  transform: none;
   transition: none;
 }
-@media (max-width: 900px) {
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
   .site-header {
-    transition: transform 280ms var(--ease-terminal);
+    transform: translate3d(0, calc(-1 * var(--header-scroll-offset, 0px)), 0);
   }
   .site-header[data-scroll-hidden="true"] {
-    transform: translateY(
-      calc(-100% - var(--spacing-layout-lg) - env(safe-area-inset-top))
-    );
     pointer-events: none;
   }
 }
 .site-header:has(:focus-visible) {
   transform: none;
   pointer-events: auto;
-  transition: none;
-}
-@media (prefers-reduced-motion: reduce) {
-  .site-header {
-    transition: none;
-  }
 }

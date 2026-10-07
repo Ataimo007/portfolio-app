@@ -5,6 +5,7 @@ test("four-entry navigation supports portfolio disclosure and resume download", 
   await page.route("**/api/auth/session", (route) =>
     route.fulfill({ json: { authenticated: false } }),
   );
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   const mobile = page.getByRole("button", {
     name: "Open navigation",
@@ -68,6 +69,7 @@ test("literal contact details remain accessible in the shared header", async ({
 test("contact callout is legible and header retains its compact height", async ({
   page,
 }, info) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
   await page.evaluate(() => document.fonts.ready);

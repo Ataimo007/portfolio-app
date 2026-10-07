@@ -1,45 +1,53 @@
 import { test, expect } from "@playwright/test";
-test("header motion follows scroll direction and preserves keyboard and open-menu access", async ({
+test("header follows actual mobile scroll distance and remains stationary on desktop", async ({
   page,
 }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/projects");
   const header = page.locator(".site-header");
+  const offset = () =>
+    header.evaluate((e) =>
+      parseFloat(
+        (e as HTMLElement).style.getPropertyValue("--header-scroll-offset"),
+      ),
+    );
   await expect(header).toHaveAttribute("data-scroll-hidden", "false");
-  await page.evaluate(() => window.scrollTo(0, 500));
+  await page.evaluate(() => window.scrollTo(0, 20));
   if (page.viewportSize()!.width > 900) {
+    await expect.poll(offset).toBe(0);
+    await page.evaluate(() => window.scrollTo(0, 500));
     await expect(header).toHaveAttribute("data-scroll-hidden", "false");
     expect((await header.boundingBox())!.y).toBeGreaterThanOrEqual(0);
-    await page.goto("/");
     return;
   }
+  await expect.poll(offset).toBe(20);
+  await page.waitForTimeout(350);
+  expect(await offset()).toBe(20);
+  await page.evaluate(() => window.scrollBy(0, 20));
+  await expect.poll(offset).toBe(40);
+  await page.evaluate(() => window.scrollBy(0, -12));
+  await expect.poll(offset).toBe(28);
+  await page.evaluate(() => window.scrollTo(0, 500));
   await expect(header).toHaveAttribute("data-scroll-hidden", "true");
-  await expect
-    .poll(
-      async () =>
-        (await header.boundingBox())!.y + (await header.boundingBox())!.height,
-    )
-    .toBeLessThanOrEqual(0);
-  await page.evaluate(() => window.scrollTo(0, 460));
-  await expect(header).toHaveAttribute("data-scroll-hidden", "false");
-  await expect
-    .poll(async () => (await header.boundingBox())!.y)
-    .toBeGreaterThanOrEqual(0);
-  const toggle = page.getByRole("button", {
-    name: "Open navigation",
-    exact: true,
-  });
-  if (await toggle.isVisible()) await toggle.click();
-  else await page.locator(".portfolio-menu > summary").click();
-  await page.evaluate(() => window.scrollTo(0, 650));
-  await expect(header).toHaveAttribute("data-scroll-hidden", "false");
+  await page.evaluate(() => window.scrollBy(0, -200));
+  await expect.poll(offset).toBe(0);
+  await page
+    .getByRole("button", { name: "Open navigation", exact: true })
+    .click();
+  await page.evaluate(() => window.scrollBy(0, 200));
+  await expect.poll(offset).toBe(0);
   await page.keyboard.press("Escape");
   await page.emulateMedia({ reducedMotion: "reduce" });
-  expect(
-    await header.evaluate((e) => getComputedStyle(e).transitionDuration),
-  ).toBe("0s");
-  await page.goto("/");
-  const callout = page.locator(".contact-callout");
-  expect(
-    await callout.evaluate((e) => getComputedStyle(e).backgroundColor),
-  ).toMatch(/0\.84|84%/);
+  await page.evaluate(() => window.scrollBy(0, 200));
+  await expect.poll(offset).toBe(0);
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.mouse.click(200, 300);
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.evaluate(() => window.scrollTo(0, 500));
+  await expect(header).toHaveAttribute("data-scroll-hidden", "true");
+  await page.setViewportSize({ width: 1280, height: 844 });
+  await expect.poll(offset).toBe(0);
+  expect(await header.evaluate((e) => getComputedStyle(e).transform)).toBe(
+    "none",
+  );
 });

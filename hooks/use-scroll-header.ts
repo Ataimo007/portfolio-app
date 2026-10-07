@@ -5,50 +5,62 @@ export function useScrollHeader(path: string) {
     const header = document.querySelector<HTMLElement>(".site-header");
     if (!header) return;
     const mobile = matchMedia("(max-width: 900px)");
-    let last = Math.max(0, window.scrollY);
-    let travel = 0;
-    let frame = 0;
-    header.dataset.scrollHidden = "false";
-    const update = () => {
-      frame = 0;
-      const current = Math.max(
+    const reduced = matchMedia("(prefers-reduced-motion: reduce)");
+    const scrollY = () =>
+      Math.max(
         0,
         Math.min(
           window.scrollY,
-          document.documentElement.scrollHeight - innerHeight,
+          Math.max(0, document.documentElement.scrollHeight - innerHeight),
         ),
       );
+    let last = scrollY();
+    let offset = 0;
+    let frame = 0;
+    let distance = 0;
+    const render = () => {
+      header.style.setProperty("--header-scroll-offset", `${offset}px`);
+      header.dataset.scrollHidden = String(offset >= distance && distance > 0);
+    };
+    const reset = () => {
+      const top = Number.parseFloat(getComputedStyle(header).top) || 0;
+      distance = header.offsetHeight + top * 2;
+      offset = 0;
+      last = scrollY();
+      render();
+    };
+    const update = () => {
+      frame = 0;
+      const current = scrollY();
       const difference = current - last;
-      travel =
-        Math.sign(difference) === Math.sign(travel)
-          ? travel + difference
-          : difference;
       last = current;
       const interacting = header.querySelector(
         '[data-open="true"], details[open], :focus-visible',
       );
-      if (!mobile.matches || current <= header.offsetHeight || interacting) {
-        header.dataset.scrollHidden = "false";
-        travel = 0;
-      } else if (Math.abs(travel) >= 8) {
-        header.dataset.scrollHidden = String(travel > 0);
-        travel = 0;
-      }
+      offset =
+        !mobile.matches || reduced.matches || current <= 0 || interacting
+          ? 0
+          : Math.max(0, Math.min(distance, offset + difference));
+      render();
     };
     const scroll = () => {
       if (!frame) frame = requestAnimationFrame(update);
     };
-    const focus = () => {
-      header.dataset.scrollHidden = "false";
-    };
-    mobile.addEventListener("change", update);
+    reset();
+    const observer = new ResizeObserver(reset);
+    observer.observe(header);
+    mobile.addEventListener("change", reset);
+    reduced.addEventListener("change", reset);
     window.addEventListener("scroll", scroll, { passive: true });
-    header.addEventListener("focusin", focus);
+    header.addEventListener("focusin", reset);
     return () => {
       cancelAnimationFrame(frame);
-      mobile.removeEventListener("change", update);
+      observer.disconnect();
+      mobile.removeEventListener("change", reset);
+      reduced.removeEventListener("change", reset);
       window.removeEventListener("scroll", scroll);
-      header.removeEventListener("focusin", focus);
+      header.removeEventListener("focusin", reset);
+      header.style.removeProperty("--header-scroll-offset");
       delete header.dataset.scrollHidden;
     };
   }, [path]);

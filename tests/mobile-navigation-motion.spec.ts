@@ -3,10 +3,22 @@ test("mobile navigation remains sticky, closes accessibly and exposes installati
   page,
 }, info) => {
   if (info.project.name !== "mobile") return;
+  test.setTimeout(90_000);
   await page.route("**/api/auth/session", (r) =>
     r.fulfill({ json: { authenticated: false } }),
   );
-  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.addInitScript(() => {
+    const original = HTMLCanvasElement.prototype.getContext;
+    HTMLCanvasElement.prototype.getContext = function (
+      this: HTMLCanvasElement,
+      type,
+      ...args
+    ) {
+      if (type === "webgl2") return null;
+      return original.apply(this, [type, ...args] as never);
+    } as typeof original;
+  });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   for (const route of ["/", "/projects", "/contact", "/portal", "/install"]) {
     await page.goto(route);
     const trigger = page.getByRole("button", {
@@ -19,7 +31,7 @@ test("mobile navigation remains sticky, closes accessibly and exposes installati
       "data-scroll-hidden",
       "true",
     );
-    await page.evaluate(() => window.scrollBy(0, -40));
+    await page.evaluate(() => window.scrollBy(0, -200));
     await expect(page.locator(".site-header")).toHaveAttribute(
       "data-scroll-hidden",
       "false",

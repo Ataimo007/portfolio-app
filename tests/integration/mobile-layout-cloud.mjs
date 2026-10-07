@@ -58,7 +58,7 @@ try {
       () =>
         document.querySelector(".site-header").dataset.scrollHidden === "true",
     );
-    await page.evaluate(() => window.scrollBy(0, -40));
+    await page.evaluate(() => window.scrollBy(0, -200));
     await page.waitForFunction(
       () =>
         document.querySelector(".site-header").dataset.scrollHidden === "false",

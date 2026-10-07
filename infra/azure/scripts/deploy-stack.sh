@@ -39,7 +39,7 @@ else
   ARCHIVE="$(mktemp /tmp/ataimo-images.XXXXXX.tar)"
   trap 'rm -f "$ARCHIVE"' EXIT
   docker save -o "$ARCHIVE" "$IMAGE" "$WORKER"
-  k3s ctr images import "$ARCHIVE"
+  k3s ctr images import --local "$ARCHIVE"
 fi
 PULL_VALUES=()
 if [ -f "$CLOUD/.local/registry-values.json" ]; then
