@@ -190,3 +190,12 @@ Actions detected the existing Azure VM and selected brownfield. Azure OIDC, auth
 Actions verified live TLS homepage, anonymous install page and application health. Controller live acceptance passed desktop stationary/mobile proportional header behavior, menu/reduced-motion behavior, Chromium PWA installability, service worker, private-cache exclusion and offline recovery. Public telemetry returned `mode=live`, `environment=azure-k3s`, `overall=healthy`, `stale=false`, source `prometheus` with a fresh timestamp. These are actual deployed measurements. No demonstration data was added. Physical-phone push remains the previously documented device-level check; no new claim of provider login or mailbox delivery testing is made here.
 
 Greenfield Terraform/Ansible/dependency/TLS/mail automation remains implemented and statically validated, but fresh-cloud provisioning has not been executed. The current infrastructure was preserved. Main pushes now perform image publication and app-only delivery; explicit greenfield runs require a genuinely empty target and state.
+
+
+## 2026-10-07 — Clean repository and CI/CD architecture rollout
+
+Successful Actions run: https://github.com/Ataimo007/portfolio-app/actions/runs/37700551336, source `cbacda5`. All 68 browser tests and infrastructure checks passed from a checkout without local skill packages, source asset copies or design experiments. Local targeted architecture/telemetry checks: 18 passed. Secret scan of staged source: no leaks.
+
+App digest: `docker.io/ataimo007/ataimo-portfolio@sha256:f6448002d73a817ad830773c13d22164765bf6acb28a79b3758993412903f8c0`. Worker digest: `docker.io/ataimo007/ataimo-portfolio-worker@sha256:2c7aa6f414e596307fb72ce6a945f2edf95555ee0fa65fa4d784ed7bc9c55110`. Migration 19 completed; app/worker Ready with zero restarts. Only the two app release revisions changed; all other 17 releases were preserved.
+
+Live desktop/mobile (1440px/390px) verification passed six delivery nodes, Terraform detail selection, component logo responses, 3D viewer mounting, scroll-background rendering and no horizontal page overflow. The live-check harness was corrected to await React rendering and fetch SVGs through Chromium's Azure host mapping rather than the controller's localhost DNS mapping. No app defect was inferred from those harness failures. The earlier superseded Actions run was canceled before delivery. Actual fresh infrastructure provisioning remains unexecuted.
