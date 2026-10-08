@@ -3,7 +3,8 @@ import { cookies } from "next/headers";
 import { createHash, randomBytes } from "node:crypto";
 import { EncryptJWT, jwtDecrypt } from "jose";
 import * as oidc from "openid-client";
-import { database } from "./db";
+import { database, transaction } from "./db";
+import { ownerAlert, queueEmail } from "./notification-email";
 import { PortalError, siteURL } from "./portal-http";
 
 export const sessionCookie = "ataimo_session";
@@ -151,34 +152,46 @@ export async function createSession(claims: oidc.IDToken, rawToken: string) {
         ? claims.preferred_username
         : "Client";
   const email = typeof claims.email === "string" ? claims.email : "";
-  const row = await database().query(
-    "INSERT INTO client_profiles(issuer,subject,display_name,email) VALUES($1,$2,$3,$4) ON CONFLICT(issuer,subject) DO UPDATE SET display_name=excluded.display_name,email=excluded.email RETURNING id",
-    [claims.iss, claims.sub, name.slice(0, 200), email.slice(0, 254)],
-  );
-  if (roles.includes("owner") || roles.includes("admin")) {
-    await database().query(
-      "INSERT INTO owner_accounts(client_id) VALUES($1) ON CONFLICT DO NOTHING",
-      [row.rows[0].id],
+  return transaction(async (client) => {
+    const row = await client.query(
+      "INSERT INTO client_profiles(issuer,subject,display_name,email) VALUES($1,$2,$3,$4) ON CONFLICT(issuer,subject) DO UPDATE SET display_name=excluded.display_name,email=excluded.email RETURNING id,(xmax=0) AS is_new",
+      [claims.iss, claims.sub, name.slice(0, 200), email.slice(0, 254)],
     );
-  } else {
-    await database().query("DELETE FROM owner_accounts WHERE client_id=$1", [
-      row.rows[0].id,
-    ]);
-  }
-  const token = randomBytes(32).toString("base64url");
-  const seconds = Math.max(
-    1,
-    Math.min(1800, Number(claims.exp) - Math.floor(Date.now() / 1000)),
-  );
-  await database().query(
-    "INSERT INTO portal_sessions(token_hash,client_id,roles,id_token,expires_at) VALUES($1,$2,$3,$4,now()+$5*interval '1 second')",
-    [
-      tokenHash(token),
-      row.rows[0].id,
-      JSON.stringify(roles),
-      await seal({ idToken: rawToken }, 1800),
-      seconds,
-    ],
-  );
-  return { token, seconds };
+    if (roles.includes("owner") || roles.includes("admin")) {
+      await client.query(
+        "INSERT INTO owner_accounts(client_id) VALUES($1) ON CONFLICT DO NOTHING",
+        [row.rows[0].id],
+      );
+    } else {
+      await client.query("DELETE FROM owner_accounts WHERE client_id=$1", [
+        row.rows[0].id,
+      ]);
+    }
+    const token = randomBytes(32).toString("base64url");
+    const seconds = Math.max(
+      1,
+      Math.min(1800, Number(claims.exp) - Math.floor(Date.now() / 1000)),
+    );
+    await client.query(
+      "INSERT INTO portal_sessions(token_hash,client_id,roles,id_token,expires_at) VALUES($1,$2,$3,$4,now()+$5*interval '1 second')",
+      [
+        tokenHash(token),
+        row.rows[0].id,
+        JSON.stringify(roles),
+        await seal({ idToken: rawToken }, 1800),
+        seconds,
+      ],
+    );
+    const clientId = row.rows[0].id;
+    if (row.rows[0].is_new)
+      await queueEmail(client, email, "welcome", "welcome:" + clientId, {
+        name,
+      });
+    await ownerAlert(client, "account.login", "login:" + tokenHash(token), {
+      name,
+      email,
+      url: "/admin",
+    });
+    return { token, seconds };
+  });
 }

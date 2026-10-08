@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import NotificationCenter from "./notification-center";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -165,6 +166,7 @@ export default function Navigation() {
           <span>No account needed</span>
         </div>
       </nav>
+      {account === "authenticated" && <NotificationCenter />}
       <noscript>
         <style>{`.mobile-navigation-toggle {display:none!important} .main-navigation {display:flex!important;position:static!important;flex-wrap:wrap!important}`}</style>
       </noscript>

@@ -1,3 +1,4 @@
+import { sendPendingEmail } from "./email.mjs";
 import { pollMail } from "./mail-poll.mjs";
 import { sendPendingPush } from "./push.mjs";
 import { collectPods } from "./telemetry.mjs";
@@ -398,6 +399,7 @@ async function main() {
       }
       await publish();
       await sendPendingPush(db);
+      await sendPendingEmail(db);
       if (Date.now() > nextMail) {
         nextMail = Date.now() + 60000;
         try {

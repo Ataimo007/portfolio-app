@@ -6,7 +6,7 @@ variable "name" {
 }
 variable "vm_size" {
   type    = string
-  default = "Standard_D2as_v5"
+  default = "Standard_E2as_v5"
 }
 variable "admin_username" {
   type    = string

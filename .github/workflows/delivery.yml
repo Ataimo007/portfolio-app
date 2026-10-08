@@ -88,7 +88,7 @@ jobs:
       AZURE_VM_NAME: ${{ vars.AZURE_VM_NAME || 'ataimo-platform' }}
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP || 'ataimo-platform-rg' }}
       AZURE_LOCATION: ${{ vars.AZURE_LOCATION || 'westeurope' }}
-      AZURE_VM_SIZE: ${{ vars.AZURE_VM_SIZE || 'Standard_D2as_v5' }}
+      AZURE_VM_SIZE: ${{ vars.AZURE_VM_SIZE || 'Standard_E2as_v5' }}
       AZURE_DNS_LABEL: ${{ vars.AZURE_DNS_LABEL || 'ataimo-platform' }}
       AZURE_DNS_RESOURCE_GROUP: ${{ vars.AZURE_DNS_RESOURCE_GROUP || 'shared' }}
       AZURE_ADMIN_CIDRS: ${{ vars.AZURE_ADMIN_CIDRS || '["0.0.0.0/0"]' }}

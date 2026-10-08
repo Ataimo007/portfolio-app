@@ -105,6 +105,7 @@ export default function Portal({
     [day, setDay] = useState(""),
     [slotId, setSlotId] = useState(""),
     [text, setText] = useState("");
+  const notificationTarget = useRef("");
   const fetching = useRef(false),
     nonce = useRef<string | null>(null),
     chatEnd = useRef<HTMLDivElement>(null),
@@ -119,6 +120,25 @@ export default function Portal({
       ]);
       setData(workspace);
       setConversations(threads.conversations);
+      const params = new URLSearchParams(window.location.search);
+      const target =
+        params.get("job") ||
+        (params.get("conversation")
+          ? "direct:" + params.get("conversation")
+          : "");
+      const navigationTarget =
+        target ||
+        (window.location.hash === "#mail" || params.get("view") === "mail"
+          ? "mail"
+          : "");
+      if (navigationTarget && notificationTarget.current !== navigationTarget) {
+        notificationTarget.current = navigationTarget;
+        if (target) {
+          setSelected(target);
+          setSection("messages");
+        } else if (workspace.user.isOwner) setSection("mail");
+      }
+
       setSignedOut(false);
       setError("");
     } catch (e) {

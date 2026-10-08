@@ -1,3 +1,4 @@
+import { ownerAlert } from "@/lib/notification-email";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { database, transaction } from "@/lib/db";
@@ -59,14 +60,21 @@ export async function POST(request: Request, { params }: Context) {
         "INSERT INTO messages(job_id,sender_id,body,client_nonce) VALUES($1,$2,$3,$4) ON CONFLICT(sender_id,client_nonce) DO NOTHING RETURNING id",
         [id, user.clientId, input.body, input.nonce],
       );
-      if (inserted.rowCount)
+      if (inserted.rowCount) {
+        if (!user.isOwner)
+          await ownerAlert(
+            client,
+            "message.created",
+            "message:" + inserted.rows[0].id,
+            { name: user.name, url: "/admin?job=" + id },
+          );
         await event(
           client,
           "message.created",
           id,
           user.isOwner ? [job.client_id] : await owners(client),
         );
-      else {
+      } else {
         const existing = await client.query(
           "SELECT job_id,body FROM messages WHERE sender_id=$1 AND client_nonce=$2",
           [user.clientId, input.nonce],

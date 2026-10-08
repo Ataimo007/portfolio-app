@@ -1,3 +1,4 @@
+import { ownerAlert } from "@/lib/notification-email";
 import { z } from "zod";
 import { requireSession } from "@/lib/auth";
 import { database, transaction } from "@/lib/db";
@@ -84,6 +85,13 @@ export async function POST(
           );
         return;
       }
+      if (!user.isOwner)
+        await ownerAlert(
+          client,
+          "message.created",
+          "message:" + result.rows[0].id,
+          { name: user.name, url: "/admin?conversation=" + id },
+        );
       await client.query(
         "INSERT INTO event_outbox(event_type,aggregate_id,payload) VALUES('message.created',$1,$2)",
         [
