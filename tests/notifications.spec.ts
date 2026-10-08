@@ -55,9 +55,9 @@ test("signed-in notification inbox supports unread, navigation, error and empty 
   await page
     .getByRole("button", { name: "Notifications", exact: true })
     .click();
-  await expect(page.getByRole("alert")).toContainText(
-    "temporarily unavailable",
-  );
+  await expect(
+    page.locator(".notification-panel").getByRole("alert"),
+  ).toContainText("temporarily unavailable");
   await page.route("**/api/notifications", (r) =>
     r.fulfill({ json: { notifications: [], unread: 0 } }),
   );
