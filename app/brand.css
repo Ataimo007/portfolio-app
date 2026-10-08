@@ -1240,13 +1240,14 @@ footer strong {
 }
 @media (max-width: 900px) {
   .notification-center {
+    position: static;
     order: 3;
   }
   .mobile-navigation-toggle {
     order: 4;
   }
   .notification-center .notification-panel {
-    position: fixed;
+    position: absolute;
     top: calc(100% + var(--spacing-layout-sm));
     right: 0;
   }
