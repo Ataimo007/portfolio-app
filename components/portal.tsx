@@ -450,6 +450,15 @@ export default function Portal({
             <p>
               Your sign-in identity is managed securely by your login provider.
             </p>
+            <p>
+              <a className="button secondary" href="/api/auth/account">
+                Manage sign-in, password and account security
+              </a>
+            </p>
+            <p>
+              Password recovery uses a verification link sent to your email.
+              For social sign-in, manage your password with your social provider.
+            </p>
             <form
               className="portal-form"
               onSubmit={(e) => {

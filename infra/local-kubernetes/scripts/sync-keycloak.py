@@ -72,7 +72,8 @@ realm.update({
     'registrationAllowed': True,
     'loginWithEmailAllowed': True,
     'duplicateEmailsAllowed': False,
-    'resetPasswordAllowed': False,
+    'resetPasswordAllowed': True,
+    'verifyEmail': True,
     'passwordPolicy': 'length(12) and notUsername(undefined) and notEmail(undefined)',
     'bruteForceProtected': True,
     'permanentLockout': False,
@@ -80,6 +81,19 @@ realm.update({
     'waitIncrementSeconds': 60,
     'maxFailureWaitSeconds': 900,
 })
+mail_raw = subprocess.check_output(['kubectl', 'get', 'secret', 'mailu-credentials', '-n', 'mail', '--ignore-not-found', '-o', 'json'], text=True).strip()
+if mail_raw:
+    mail = json.loads(mail_raw)
+    realm['smtpServer'] = {
+        'host': 'mail.ataimo.com', 'port': '465', 'ssl': 'true',
+        'starttls': 'false', 'auth': 'true', 'user': 'ataimo@ataimo.com',
+        'password': base64.b64decode(mail['data']['ataimo-password']).decode(),
+        'from': 'hello@ataimo.com', 'fromDisplayName': 'Ataimo',
+        'replyTo': 'contact@ataimo.com',
+    }
+if not realm.get('smtpServer', {}).get('host'):
+    realm.update({'verifyEmail': False, 'resetPasswordAllowed': False})
+    print('Email recovery awaits SMTP provisioning; rerun identity sync after mail setup')
 admin_call(method='PUT', data=realm)
 client_role = admin_call('/roles/client')
 default = realm['defaultRole']['id']
