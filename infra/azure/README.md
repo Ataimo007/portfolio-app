@@ -6,7 +6,7 @@ The Azure VM and portfolio stack were deployed on 2026-10-05. Local Kind remains
 
 Use the machine with your authenticated Azure CLI, or authenticate Azure CLI inside the Dev Container. A login on macOS is not automatically available inside the container.
 
-Provide a subscription ID, Azure region, approved VM size, SSH public/private key paths, administrator public CIDR and unique Azure DNS label. The selected size is Standard_D2as_v5 (2 vCPU, 8 GiB), with a 64 GiB OS disk and separate 128 GiB data disk. Check regional pricing and quota before applying. SSH and the Kubernetes API follow the supplied administrator CIDRs. The selected deployment profile explicitly uses 0.0.0.0/0, so SSH and the Kubernetes API are internet-accessible alongside HTTP/HTTPS.
+Provide a subscription ID, Azure region, approved VM size, SSH public/private key paths, administrator public CIDR and unique Azure DNS label. The selected size is Standard_E2as_v5 (2 vCPU, 16 GiB), with a 64 GiB OS disk and separate 128 GiB data disk. Check regional pricing and quota before applying. SSH and the Kubernetes API follow the supplied administrator CIDRs. The selected deployment profile explicitly uses 0.0.0.0/0, so SSH and the Kubernetes API are internet-accessible alongside HTTP/HTTPS.
 
 Also provide an ACME email and the **authoritative DNS provider** for ataimo.com. The certificate chart supports Cloudflare API tokens and Azure DNS managed identity. A different provider needs its supported DNS solver/webhook before deployment. Cloudflare tokens need DNS Edit and Zone Read for this zone only; supply them interactively or through CLOUDFLARE_API_TOKEN, never in a committed file. For Azure DNS, set Terraform azure_dns_zone_id and fill the DNS subscription, resource group and generated identity client ID in the private configuration. DNS Zone Contributor is assigned only to the zone. This single-VM configuration uses node managed identity, not AKS workload identity; pods able to reach node IMDS can use that identity.
 
@@ -102,7 +102,7 @@ If Azure resource writes fail with RequestDisallowedByAzure and an MFA requireme
 
 ## Deployed environment — 2026-10-05
 
-- Resource group: ataimo-platform-rg; region: westeurope; size: Standard_D2as_v5.
+- Resource group: ataimo-platform-rg; region: westeurope; size: Standard_E2as_v5.
 - Public IP: 20.229.210.201; Azure FQDN: ataimo-platform.westeurope.cloudapp.azure.com.
 - K3s v1.35.9+k3s1, Traefik disabled before startup, persistent 128 GiB data disk.
 - Dedicated SSH pair: infra/azure/.local/ataimo-azure-ed25519 and its .pub file, ignored by Git. Do not commit or share the private key.

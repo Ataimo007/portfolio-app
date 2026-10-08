@@ -39,6 +39,11 @@ const sql = (text) =>
     ],
     { input: text, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
   ).trim();
+assert.equal(
+  sql("SELECT to_regclass('public.email_deliveries');"),
+  "email_deliveries",
+  "Deploy notification migration before acceptance testing.",
+);
 const owner = { id: randomUUID(), token: randomBytes(32).toString("hex") },
   client = { id: randomUUID(), token: randomBytes(32).toString("hex") };
 const testEmail =
@@ -205,6 +210,30 @@ try {
     5,
     "Welcome and both pairs of owner alerts must be accepted by SMTP",
   );
+  let welcomeReceived = false;
+  for (let attempt = 0; attempt < 6 && !welcomeReceived; attempt++) {
+    const inbox = await call(owner, "/api/portal/mail?folder=inbox");
+    assert.equal(inbox.status, 200);
+    for (const message of inbox.body.messages
+      .filter((m) => m.subject === "Welcome to Ataimo")
+      .slice(0, 5)) {
+      const detail = await call(
+        owner,
+        `/api/portal/mail?folder=inbox&uid=${message.uid}&validity=${message.uidValidity}`,
+      );
+      if (detail.body.text?.includes(marker)) {
+        assert(detail.body.from.includes("hello@ataimo.com"));
+        assert(detail.body.text.includes("Unsubscribe"));
+        welcomeReceived = true;
+        break;
+      }
+    }
+    if (!welcomeReceived) await new Promise((r) => setTimeout(r, 1000));
+  }
+  assert(
+    welcomeReceived,
+    "Welcome must arrive in the owner's local alias inbox with an opt-out footer",
+  );
   browser = await chromium.launch({
     args: ["--host-resolver-rules=MAP ataimo.com 20.229.210.201"],
   });
@@ -229,6 +258,11 @@ try {
     await page.locator(".notification-center > summary").click();
     await expect(
       page.getByRole("region", { name: "Your notifications" }),
+    ).toBeVisible();
+    await expect(
+      page
+        .locator(".notification-panel")
+        .getByText("New private message", { exact: true }),
     ).toBeVisible();
     const box = await page.locator(".notification-panel").boundingBox();
     assert(box.x >= 0 && box.x + box.width <= width + 1);
