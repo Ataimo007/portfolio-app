@@ -7,7 +7,7 @@ import {
   type FormEvent,
 } from "react";
 import Link from "next/link";
-import WorkspaceDevice from "./workspace-device";
+import ProfileSettings from "./profile-settings";
 import OwnerMail from "./owner-mail";
 import {
   ArrowRight,
@@ -442,63 +442,12 @@ export default function Portal({
       )}
       {section === "mail" && user.isOwner && <OwnerMail />}
       {section === "profile" && (
-        <div className="workspace-profile">
-          <section className="workspace-panel">
-            <p className="eyebrow">Account details</p>
-            <h2>{user.name}</h2>
-            <p>{user.email}</p>
-            <p>
-              Your sign-in identity is managed securely by your login provider.
-            </p>
-            <p>
-              <a className="button secondary" href="/api/auth/account">
-                Manage sign-in, password and account security
-              </a>
-            </p>
-            <p>
-              Password recovery uses a verification link sent to your email.
-              For social sign-in, manage your password with your social provider.
-            </p>
-            <form
-              className="portal-form"
-              onSubmit={(e) => {
-                e.preventDefault();
-                const values = new FormData(e.currentTarget);
-                action({
-                  action: "profile",
-                  timezone: zone,
-                  company: values.get("company"),
-                  phone: values.get("phone"),
-                });
-              }}
-            >
-              <label htmlFor="profile-company">Company or organization</label>
-              <input
-                id="profile-company"
-                name="company"
-                maxLength={200}
-                defaultValue={user.company}
-              />
-              <label htmlFor="profile-phone">Phone (optional)</label>
-              <input
-                id="profile-phone"
-                name="phone"
-                type="tel"
-                maxLength={40}
-                defaultValue={user.phone}
-              />
-              <button className="button primary" disabled={busy || readOnly}>
-                {busy ? "Saving…" : "Save profile"}
-              </button>
-            </form>
-            {user.isOwner && (
-              <p>
-                <Link href="/admin">Open your owner dashboard</Link>
-              </p>
-            )}
-          </section>
-          <WorkspaceDevice />
-        </div>
+        <ProfileSettings
+          user={user}
+          busy={busy}
+          readOnly={readOnly}
+          onSave={(values) => action({ action: "profile", ...values })}
+        />
       )}
       {section === "messages" && (
         <section className="workspace-panel">
