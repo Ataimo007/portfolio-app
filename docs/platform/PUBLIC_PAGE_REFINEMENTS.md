@@ -20,3 +20,10 @@ About retains factual career content with selectable native React/CSS role
 transitions and reduced-motion support. Resume/project spacing and contact
 hierarchy use the existing warm-paper/cobalt tokens. Local lint and TypeScript
 passed; local browser startup/rendering timed out under container load.
+
+Verification completed: GitHub Actions run 37909926006 passed all 76 browser
+and supporting checks, published both images and deployed successfully. New
+application/worker pods were Ready with zero restarts and migrations completed.
+Live PDF and homepage portrait hashes matched the committed assets. Resume,
+About and Contact were captured and visually reviewed at 1440px and 390px with
+no horizontal overflow; captures are local under .impeccable/review/public-corrections.
