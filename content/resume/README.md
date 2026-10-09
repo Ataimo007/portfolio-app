@@ -1,7 +1,8 @@
 # Maintained résumé
 
 `ataimo-edem-resume.docx` is the editable résumé source. The website serves
-`public/resume/ataimo-edem-resume.pdf`. Update the source, then regenerate:
+`public/resume/ataimo-edem-resume.pdf`. Update the source, then regenerate with LibreOffice Writer and Carlito fonts
+(included in the dev container):
 
 ```sh
 python3 -m venv /tmp/ataimo-resume-tools
@@ -10,6 +11,7 @@ python3 -m venv /tmp/ataimo-resume-tools
 ```
 
 The generator preserves the source's employment and project text and produces
-an ATS-readable three-page PDF with clickable website/email/social links.
+a styled three-page PDF retaining the original navy/teal panels and typography.
+Public web contact uses contact@ataimo.com; the PDF retains Gmail as secondary.
 Check pagination and visual rendering after substantive content edits. The
 web résumé at `app/resume/page.tsx` also references this platform project.

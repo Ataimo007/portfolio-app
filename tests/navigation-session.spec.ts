@@ -18,7 +18,7 @@ test("navigation follows session changes without exposing identity data", async 
     navigation.getByRole("link", { name: "Login", exact: true }),
   ).toHaveAttribute("href", "/login");
   authenticated = true;
-  await navigation.getByRole("link", { name: "Contact Us" }).click();
+  await navigation.getByRole("link", { name: "Contact me" }).click();
   await expect(page).toHaveURL(/\/contact$/);
   if (await mobile.isVisible()) await mobile.click();
   await expect(

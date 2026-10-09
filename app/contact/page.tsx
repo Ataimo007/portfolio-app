@@ -3,14 +3,14 @@ import ContactForm from "@/components/contact-form";
 import { profile } from "@/content/site";
 import Link from "next/link";
 export const metadata = {
-  title: "Contact",
+  title: "Contact me",
   alternates: { canonical: "/contact" },
 };
 export default function Page() {
   return (
-    <div className="page">
+    <div className="page contact-page">
       <Intro
-        label="START A CONVERSATION"
+        label="CONTACT ME"
         title="Let’s build something that solves a difficult problem."
       />
       <div className="contact-grid">
@@ -32,7 +32,14 @@ export default function Page() {
           </Link>
           <p className="eyebrow">BASED IN LAGOS, NIGERIA</p>
         </div>
-        <ContactForm />
+        <section
+          className="contact-message"
+          aria-labelledby="contact-message-heading"
+        >
+          <h2 id="contact-message-heading">Send me a message.</h2>
+          <p>Tell me what you’re working on and where you’d like a hand.</p>
+          <ContactForm />
+        </section>
       </div>
     </div>
   );

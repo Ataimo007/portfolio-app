@@ -18,8 +18,6 @@ export default function Page() {
       <Intro label="WEB RESUME" title="Ataimo Edem">
         <p>{profile.summary}</p>
         <p>
-          <a href="https://ataimo.com">ataimo.com</a> ·{" "}
-          <a href="mailto:edemataimo@gmail.com">edemataimo@gmail.com</a> ·{" "}
           <a href="mailto:contact@ataimo.com">contact@ataimo.com</a>
         </p>
         <DownloadResume />
@@ -41,7 +39,7 @@ export default function Page() {
       <section>
         <h2>Selected projects</h2>
         <ProjectList />
-        <article>
+        <article className="resume-platform-project">
           <h3>Ataimo Portfolio &amp; Consultancy Platform</h3>
           <p>
             Designed, built and deployed this full-stack platform on Azure K3s,
@@ -87,9 +85,13 @@ export default function Page() {
                 <span className="certification-level">{certificate.level}</span>
               </div>
               <div className="certification-footer">
-                <time dateTime={certificate.date}>
-                  Issued {certificate.issued}
-                </time>
+                {certificate.date ? (
+                  <time dateTime={certificate.date}>
+                    Issued {certificate.issued}
+                  </time>
+                ) : (
+                  <span>Microsoft Certified · Expert</span>
+                )}
                 <a
                   href={certificate.details}
                   target="_blank"

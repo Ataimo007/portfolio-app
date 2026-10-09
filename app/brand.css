@@ -1252,3 +1252,179 @@ footer strong {
     right: 0;
   }
 }
+
+.resume > section {
+  margin-top: var(--spacing-section);
+}
+.resume-platform-project {
+  margin-top: var(--spacing-layout-xl);
+  padding-block: var(--spacing-layout-lg);
+  border-block: 1px solid var(--color-border-grid);
+}
+.resume-platform-project h3 {
+  font-size: var(--text-card-title);
+  margin: 0 0 var(--spacing-layout-md);
+}
+.resume-platform-project p {
+  max-width: 75ch;
+  line-height: 1.7;
+  margin: var(--spacing-layout-md) 0 0;
+}
+.about-page .about-grid {
+  align-items: start;
+  gap: var(--spacing-layout-xl);
+}
+.about-page .about-grid h2 {
+  font-size: var(--text-featured-title);
+  margin: 0 0 var(--spacing-layout-lg);
+}
+.about-page .about-grid p,
+.contact-page .contact-grid p {
+  font-size: var(--text-body-brand);
+  line-height: 1.75;
+  letter-spacing: normal;
+  word-spacing: normal;
+  max-width: 65ch;
+  margin: 0 0 var(--spacing-layout-lg);
+}
+.about-page .about-grid .lede {
+  font-size: var(--text-card-title);
+  line-height: 1.55;
+}
+.about-page .portrait {
+  border-radius: var(--radius-panel);
+}
+.career-journey {
+  margin-top: var(--spacing-section);
+}
+.career-introduction {
+  max-width: 65ch;
+  margin-bottom: var(--spacing-layout-xl);
+}
+.career-introduction h2 {
+  font-size: var(--text-featured-title);
+  margin-bottom: var(--spacing-layout-md);
+}
+.career-introduction p {
+  color: var(--color-text-muted);
+  line-height: 1.7;
+}
+.career-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--spacing-layout-xl);
+  border-block: 1px solid var(--color-border-grid);
+}
+.career-choices {
+  display: grid;
+}
+.career-choices button {
+  display: grid;
+  gap: var(--spacing-layout-sm);
+  padding: var(--spacing-layout-lg);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-grid);
+  background: transparent;
+  color: var(--color-text-main);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background-color 200ms var(--ease-terminal),
+    color 200ms var(--ease-terminal),
+    transform 160ms var(--ease-terminal);
+}
+.career-choices button:last-child {
+  border-bottom: 0;
+}
+.career-choices button[aria-pressed="true"],
+.career-choices button:hover {
+  background: var(--color-tint-teal);
+  color: var(--color-accent-primary);
+}
+.career-choices button:active {
+  transform: scale(0.98);
+}
+.career-choices span,
+.career-period {
+  font-size: var(--text-action);
+  font-variant-numeric: tabular-nums;
+}
+.career-detail {
+  display: flex;
+  align-items: center;
+  padding-block: var(--spacing-layout-xl);
+  min-width: 0;
+}
+.career-detail h3 {
+  font-size: var(--text-featured-title);
+  margin: var(--spacing-layout-md) 0;
+}
+.career-detail p {
+  line-height: 1.75;
+  max-width: 55ch;
+}
+.career-detail-content {
+  animation: career-enter 240ms var(--ease-terminal);
+}
+@keyframes career-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-layout-sm));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.contact-page .contact-grid {
+  gap: var(--spacing-layout-xl);
+  align-items: start;
+}
+.contact-page .contact-grid h2 {
+  font-size: var(--text-featured-title);
+  margin: 0 0 var(--spacing-layout-md);
+}
+.contact-page .contact-message {
+  padding: var(--spacing-layout-lg);
+  border: 1px solid var(--color-border-grid);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-surface);
+}
+.contact-page .contact-form {
+  border: 0;
+  padding: 0;
+  background: transparent;
+}
+.contact-page .contact-form label {
+  font-size: var(--text-action);
+}
+.contact-page .contact-form .form-note {
+  font-size: var(--text-action);
+  margin-bottom: var(--spacing-layout-lg);
+}
+@media (max-width: 700px) {
+  .resume > section,
+  .career-journey {
+    margin-top: var(--spacing-section-mobile);
+  }
+  .career-layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .career-detail {
+    min-height: calc(var(--spacing-layout-xl) * 6);
+    padding-block: var(--spacing-layout-lg);
+  }
+  .contact-page .contact-message {
+    padding: var(--spacing-layout-md);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .career-detail-content {
+    animation: none;
+  }
+  .career-choices button {
+    transition: none;
+  }
+}

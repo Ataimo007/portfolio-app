@@ -1,9 +1,10 @@
 import Image from "next/image";
-import { Intro, Flow } from "@/components/site";
+import { Intro } from "@/components/site";
+import CareerJourney from "@/components/career-journey";
 export const metadata = { title: "About", alternates: { canonical: "/about" } };
 export default function About() {
   return (
-    <div className="page">
+    <div className="page about-page">
       <Intro
         label="THE PERSON BEHIND THE PLATFORM"
         title="Built on curiosity. Grounded in experience."
@@ -41,18 +42,7 @@ export default function About() {
           <p className="eyebrow">LAGOS, NIGERIA · GLOBAL PERSPECTIVE</p>
         </div>
       </section>
-      <section className="section">
-        <h2>A career connecting disciplines.</h2>
-        <Flow
-          steps={[
-            "Software Development",
-            "Azure Support Engineering",
-            "API & Cloud Architecture",
-            "Customer Solutions Architecture",
-            "Customer Success Engineering",
-          ]}
-        />
-      </section>
+      <CareerJourney />
       <section className="education">
         <p className="eyebrow">EDUCATION / 2012 – 2018</p>
         <h2>Federal University of Technology Minna</h2>

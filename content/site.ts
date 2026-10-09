@@ -236,14 +236,14 @@ export const certifications = [
       "https://learn.microsoft.com/en-us/credentials/certifications/azure-solutions-architect/",
   },
   {
-    title: "Microsoft Azure Architect Technologies",
-    issuer: "Microsoft",
-    level: "AZ-303 · Exam",
-    issued: "April 2021",
-    date: "2021-04",
-    badge: "microsoft.svg",
+    title: "DevOps Engineer Expert",
+    issuer: "Microsoft Certified",
+    level: "Expert",
+    issued: "",
+    date: "",
+    badge: "microsoft-certified-expert.svg",
     details:
-      "https://learn.microsoft.com/en-us/credentials/certifications/exams/az-303/",
+      "https://learn.microsoft.com/en-us/credentials/certifications/devops-engineer/",
   },
   {
     title: "Azure Administrator Associate",
