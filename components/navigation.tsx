@@ -140,7 +140,7 @@ export default function Navigation() {
           </div>
         </details>
         <Link href="/contact" aria-current={current("/contact")}>
-          Contact me
+          Contact Me
         </Link>
         <a
           href={account === "anonymous" ? "/login" : "/portal"}

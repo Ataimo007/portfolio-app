@@ -15,3 +15,6 @@ a styled three-page PDF retaining the original navy/teal panels and typography.
 Public web contact uses contact@ataimo.com; the PDF retains Gmail as secondary.
 Check pagination and visual rendering after substantive content edits. The
 web résumé at `app/resume/page.tsx` also references this platform project.
+
+The exporter adds verified PDF URI annotations for website, email and social
+labels after conversion, so links remain clickable across LibreOffice versions.

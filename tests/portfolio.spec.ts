@@ -22,7 +22,7 @@ test("all main routes, keyboard access, project journeys and real resume", async
     "Projects",
     "Expertise",
     "Resume",
-    "Contact me",
+    "Contact Me",
     "Home",
   ]) {
     const mobile = page.getByRole("button", {

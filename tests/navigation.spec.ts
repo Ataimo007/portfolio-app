@@ -15,7 +15,7 @@ test("four-entry navigation supports portfolio disclosure and resume download", 
   const nav = page.getByRole("navigation", { name: "Main navigation" });
   await expect(nav.locator(":scope > a")).toHaveText([
     "Home",
-    "Contact me",
+    "Contact Me",
     "Login",
   ]);
   await expect(

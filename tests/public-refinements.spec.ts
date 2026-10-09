@@ -8,6 +8,12 @@ test("resume contacts, updated certification and career controls are usable", as
   await expect(
     page.getByRole("heading", { name: "DevOps Engineer Expert", exact: true }),
   ).toBeVisible();
+  await expect(
+    page
+      .locator(".certification-card")
+      .filter({ hasText: "DevOps Engineer Expert" })
+      .locator("time"),
+  ).toHaveAttribute("datetime", "2021-11-30");
   await expect(page.locator(".resume-platform-project")).toHaveCSS(
     "margin-top",
     "48px",

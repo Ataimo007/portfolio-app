@@ -3,7 +3,7 @@ import ContactForm from "@/components/contact-form";
 import { profile } from "@/content/site";
 import Link from "next/link";
 export const metadata = {
-  title: "Contact me",
+  title: "Contact Me",
   alternates: { canonical: "/contact" },
 };
 export default function Page() {

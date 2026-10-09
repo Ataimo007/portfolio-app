@@ -239,8 +239,8 @@ export const certifications = [
     title: "DevOps Engineer Expert",
     issuer: "Microsoft Certified",
     level: "Expert",
-    issued: "",
-    date: "",
+    issued: "November 30, 2021",
+    date: "2021-11-30",
     badge: "microsoft-certified-expert.svg",
     details:
       "https://learn.microsoft.com/en-us/credentials/certifications/devops-engineer/",
