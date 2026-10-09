@@ -13,7 +13,7 @@ test("resume contacts, updated certification and career controls are usable", as
       .locator(".certification-card")
       .filter({ hasText: "DevOps Engineer Expert" })
       .locator("time"),
-  ).toHaveAttribute("datetime", "2021-11-30");
+  ).toHaveAttribute("datetime", "2021-11");
   await expect(page.locator(".resume-platform-project")).toHaveCSS(
     "margin-top",
     "48px",

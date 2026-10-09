@@ -3,9 +3,16 @@ from pathlib import Path
 import shutil
 import subprocess
 import tempfile
-import pymupdf
+import sys
 
 root = Path(__file__).resolve().parents[2]
+approved = root / 'content/resume/ataimo-edem-resume-approved.pdf'
+if '--from-docx' not in sys.argv:
+    shutil.copyfile(approved, root / 'public/resume/ataimo-edem-resume.pdf')
+    print('Published the owner-approved PDF without modification')
+    raise SystemExit(0)
+import pymupdf
+
 source = root / 'content/resume/ataimo-edem-resume.docx'
 renderer = shutil.which('libreoffice') or shutil.which('soffice')
 if not renderer:

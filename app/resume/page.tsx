@@ -6,6 +6,7 @@ import {
   ProjectList,
 } from "@/components/site";
 import Image from "next/image";
+import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { profile, certifications } from "@/content/site";
 export const metadata = {
@@ -65,8 +66,8 @@ export default function Page() {
       <section>
         <h2>Certifications</h2>
         <p className="location">
-          Historical credentials from the supplied resume; current renewal
-          status is not asserted.
+          Microsoft credentials earned by Ataimo Edem. Open a credential to view
+          its award details and skills measured.
         </p>
         <ul className="certification-grid">
           {certifications.map((certificate) => (
@@ -92,14 +93,12 @@ export default function Page() {
                 ) : (
                   <span>Microsoft Certified · Expert</span>
                 )}
-                <a
-                  href={certificate.details}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label={`${certificate.title} credential details on Microsoft Learn (opens in a new tab)`}
+                <Link
+                  href={`/certifications/${certificate.slug}`}
+                  aria-label={`${certificate.title} credential details`}
                 >
                   Details <ArrowUpRight size={16} aria-hidden="true" />
-                </a>
+                </Link>
               </div>
             </li>
           ))}
