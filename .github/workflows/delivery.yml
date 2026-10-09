@@ -38,6 +38,12 @@ jobs:
         run: |
           test -n "$APP_REPOSITORY"
           test -n "$WORKER_REPOSITORY"
+      - name: Read application version
+        id: version
+        run: |
+          VERSION="$(node -p 'require("./package.json").version')"
+          [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]
+          echo "value=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Publish application
         id: app
         uses: docker/build-push-action@v6
@@ -46,7 +52,15 @@ jobs:
           target: runtime
           platforms: linux/amd64
           push: true
-          tags: ${{ vars.DOCKERHUB_APP_REPOSITORY }}:sha-${{ github.sha }}
+          tags: |
+            ${{ vars.DOCKERHUB_APP_REPOSITORY }}:sha-${{ github.sha }}
+            ${{ vars.DOCKERHUB_APP_REPOSITORY }}:v${{ steps.version.outputs.value }}
+            ${{ vars.DOCKERHUB_APP_REPOSITORY }}:v${{ steps.version.outputs.value }}-build.${{ github.run_number }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.value }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/Ataimo007/portfolio-app
+            org.opencontainers.image.licenses=LicenseRef-Ataimo-Proprietary
           build-args: SITE_URL=https://ataimo.com
           cache-from: type=gha,scope=portfolio
           cache-to: type=gha,mode=max,scope=portfolio
@@ -58,10 +72,25 @@ jobs:
           target: worker
           platforms: linux/amd64
           push: true
-          tags: ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}:sha-${{ github.sha }}
+          tags: |
+            ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}:sha-${{ github.sha }}
+            ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}:v${{ steps.version.outputs.value }}
+            ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}:v${{ steps.version.outputs.value }}-build.${{ github.run_number }}
+          labels: |
+            org.opencontainers.image.version=${{ steps.version.outputs.value }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=https://github.com/Ataimo007/portfolio-app
+            org.opencontainers.image.licenses=LicenseRef-Ataimo-Proprietary
           build-args: SITE_URL=https://ataimo.com
           cache-from: type=gha,scope=portfolio
           cache-to: type=gha,mode=max,scope=worker
+      - name: Update Docker Hub overviews
+        env:
+          DOCKERHUB_USERNAME: ${{ vars.DOCKERHUB_USERNAME }}
+          DOCKERHUB_TOKEN: ${{ secrets.DOCKERHUB_TOKEN }}
+          APP_REPOSITORY: ${{ vars.DOCKERHUB_APP_REPOSITORY }}
+          WORKER_REPOSITORY: ${{ vars.DOCKERHUB_WORKER_REPOSITORY }}
+        run: python3 infra/azure/ci/update-dockerhub.py
       - name: Record immutable deployment images
         id: references
         env:

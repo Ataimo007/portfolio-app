@@ -17,6 +17,11 @@ export default function Page() {
     <div className="page resume">
       <Intro label="WEB RESUME" title="Ataimo Edem">
         <p>{profile.summary}</p>
+        <p>
+          <a href="https://ataimo.com">ataimo.com</a> ·{" "}
+          <a href="mailto:edemataimo@gmail.com">edemataimo@gmail.com</a> ·{" "}
+          <a href="mailto:contact@ataimo.com">contact@ataimo.com</a>
+        </p>
         <DownloadResume />
       </Intro>
       <section>
@@ -36,6 +41,24 @@ export default function Page() {
       <section>
         <h2>Selected projects</h2>
         <ProjectList />
+        <article>
+          <h3>Ataimo Portfolio &amp; Consultancy Platform</h3>
+          <p>
+            Designed, built and deployed this full-stack platform on Azure K3s,
+            integrating federated identity, PostgreSQL-backed consultation
+            bookings, engagement tracking, private chat, an owner mailbox and
+            PWA notifications. Redpanda powers background events; Prometheus and
+            Grafana provide live telemetry. Terraform, Ansible, Helm and GitHub
+            Actions automate infrastructure and Docker Hub image delivery, with
+            Envoy Gateway and cert-manager handling routing and TLS.
+          </p>
+          <p>
+            <a href="/platform">Explore the platform architecture</a> ·{" "}
+            <a href="https://github.com/Ataimo007/portfolio-app">
+              View the source repository
+            </a>
+          </p>
+        </article>
       </section>
       <section>
         <h2>Technical expertise</h2>
