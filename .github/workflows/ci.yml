@@ -28,6 +28,7 @@ jobs:
           python3 -m venv /tmp/ataimo-ci-tools
           /tmp/ataimo-ci-tools/bin/pip install -r infra/azure/ci/requirements.txt
           export PATH="/tmp/ataimo-ci-tools/bin:$PATH"
+          ansible-galaxy collection install -r infra/azure/ansible/requirements.yml
           bash infra/azure/ci/check-assets.sh
       - run: npm run build:platform
       - uses: actions/upload-artifact@v4

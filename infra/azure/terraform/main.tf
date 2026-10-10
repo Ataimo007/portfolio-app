@@ -122,10 +122,10 @@ resource "azurerm_linux_virtual_machine" "platform" {
     disk_size_gb         = 64
   }
   source_image_reference {
-    publisher = "Canonical"
-    offer     = "ubuntu-24_04-lts"
-    sku       = "server"
-    version   = "latest"
+    publisher = var.source_image.publisher
+    offer     = var.source_image.offer
+    sku       = var.source_image.sku
+    version   = var.source_image.version
   }
   dynamic "identity" {
     for_each = var.azure_dns_zone_id == null ? [] : [true]

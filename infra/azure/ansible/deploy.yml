@@ -1,4 +1,4 @@
-- name: Build and deploy the platform on K3s
+- name: Deploy the platform on K3s
   hosts: k3s
   become: true
   tasks:
@@ -27,11 +27,13 @@
         src: '{{ playbook_dir }}/../.local/config.json'
         dest: /opt/ataimo/infra/azure/.local/config.json
         mode: '0600'
-    - name: Build and deploy Helm workloads
+    - name: Deploy Helm workloads
       ansible.builtin.command: bash infra/azure/scripts/deploy-stack.sh
       args:
         chdir: /opt/ataimo
       environment:
         KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        APP_IMAGE: '{{ lookup("env", "APP_IMAGE") }}'
+        WORKER_IMAGE: '{{ lookup("env", "WORKER_IMAGE") }}'
       register: deployment
       changed_when: true

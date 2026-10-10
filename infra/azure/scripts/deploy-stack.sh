@@ -4,6 +4,13 @@ ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 CLOUD="$ROOT/infra/azure"
 LOCAL="$ROOT/infra/local-kubernetes"
 export KUBECONFIG="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
+if [ -z "${APP_IMAGE:-}" ] && ! command -v docker >/dev/null; then
+  echo 'This node uses K3s containerd. Set APP_IMAGE and WORKER_IMAGE to published registry images, or deploy through GitHub Actions.' >&2
+  exit 1
+fi
+if [ -n "${APP_IMAGE:-}" ]; then
+  : "${WORKER_IMAGE:?Set the published worker image alongside APP_IMAGE}"
+fi
 kubectl get nodes -l ataimo.com/environment=azure -o name | grep -q . || { echo 'An Azure-labelled K3s node is required.' >&2; exit 1; }
 python3 "$CLOUD/scripts/render-values.py"
 for ns in database identity monitoring streaming app ingress cert-manager; do

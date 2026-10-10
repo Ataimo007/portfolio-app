@@ -14,7 +14,12 @@ node = {'ansible_host': outputs['public_ip']['value'], 'vm_fqdn': outputs['vm_fq
 (root / '.local/inventory.json').write_text(json.dumps({'all': {'children': {'k3s': {'hosts': {'ataimo': node}}}}}))
 (root / '.local/inventory.json').chmod(0o600)
 PY
-ansible-playbook -i "$CLOUD/.local/inventory.json" "$CLOUD/ansible/provision.yml"
+EXTRA_VARS=()
+if [ -n "${NODE_CONFIG_ARCHIVE:-}" ]; then
+  test -f "$NODE_CONFIG_ARCHIVE"
+  EXTRA_VARS=(--extra-vars "$(python3 -c 'import json,os; print(json.dumps({"node_config_archive": os.path.abspath(os.environ["NODE_CONFIG_ARCHIVE"])}))')")
+fi
+ansible-playbook -i "$CLOUD/.local/inventory.json" "$CLOUD/ansible/provision.yml" "${EXTRA_VARS[@]}"
 python3 - "$CLOUD" <<'PY'
 import json, sys, yaml
 from pathlib import Path

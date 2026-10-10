@@ -1,12 +1,12 @@
 # Azure single-node deployment
 
-The Azure VM and portfolio stack were deployed on 2026-10-05. Local Kind remains separate. Cloud HTTPS, username/password OIDC login/logout and fresh telemetry were verified against the VM IP. Public web DNS cutover was approved and executed; social-provider OAuth credentials remain unconfigured.
+The Azure VM and portfolio stack were initially deployed on 2026-10-05. Local Kind remains separate. The cloud node now uses the Azure Linux 3 profile described in [AZURE_LINUX.md](AZURE_LINUX.md), with the existing persistent cluster disk retained. Public DNS, HTTPS, mail and social identity providers are configured; see the dated validation records for checks actually performed.
 
 ## Inputs
 
 Use the machine with your authenticated Azure CLI, or authenticate Azure CLI inside the Dev Container. A login on macOS is not automatically available inside the container.
 
-Provide a subscription ID, Azure region, approved VM size, SSH public/private key paths, administrator public CIDR and unique Azure DNS label. The selected size is Standard_E2as_v5 (2 vCPU, 16 GiB), with a 64 GiB OS disk and separate 128 GiB data disk. Check regional pricing and quota before applying. SSH and the Kubernetes API follow the supplied administrator CIDRs. The selected deployment profile explicitly uses 0.0.0.0/0, so SSH and the Kubernetes API are internet-accessible alongside HTTP/HTTPS.
+Provide a subscription ID, Azure region, approved VM size, SSH public/private key paths, administrator public CIDR and unique Azure DNS label. The selected size is Standard_E2as_v5 (2 vCPU, 16 GiB), with a 64 GiB OS disk and separate 128 GiB data disk. Terraform defaults to the pinned x64 Gen2 Azure Linux 3 image `MicrosoftCBLMariner:azure-linux-3:azure-linux-3-gen2:3.20260923.01`; `source_image` can select a different supported image explicitly. An image change replaces the VM, so use the [OS replacement runbook](AZURE_LINUX.md) for an existing stack. Check regional pricing and quota before applying. SSH and the Kubernetes API follow the supplied administrator CIDRs. The selected deployment profile explicitly uses 0.0.0.0/0, so SSH and the Kubernetes API are internet-accessible alongside HTTP/HTTPS.
 
 Also provide an ACME email and the **authoritative DNS provider** for ataimo.com. The certificate chart supports Cloudflare API tokens and Azure DNS managed identity. A different provider needs its supported DNS solver/webhook before deployment. Cloudflare tokens need DNS Edit and Zone Read for this zone only; supply them interactively or through CLOUDFLARE_API_TOKEN, never in a committed file. For Azure DNS, set Terraform azure_dns_zone_id and fill the DNS subscription, resource group and generated identity client ID in the private configuration. DNS Zone Contributor is assigned only to the zone. This single-VM configuration uses node managed identity, not AKS workload identity; pods able to reach node IMDS can use that identity.
 
@@ -25,7 +25,7 @@ infra/azure/scripts/plan.sh
 infra/azure/scripts/apply.sh
 ```
 
-The first command displays and saves the actual Azure plan; the second applies that saved plan. State, saved plans and private configuration are ignored by Git. Keep state backed up securely; an Azure Storage backend is a future improvement. The data disk is protected with prevent_destroy.
+The first command displays and saves the actual Azure plan; the second applies that saved plan. State, saved plans and private configuration are ignored by Git. State is stored in the configured Azure Storage backend; keep private local controller files and rollback backups secure. The data disk is protected with prevent_destroy.
 
 Before SSH, retrieve the VM SSH host public keys through authenticated Azure Run Command:
 
@@ -39,6 +39,8 @@ Compare the trusted key with ssh-keyscan for the VM IP, then add the matching ke
 ```sh
 export SSH_PRIVATE_KEY="$HOME/.ssh/id_ed25519"
 infra/azure/scripts/provision.sh
+export APP_IMAGE="docker.io/ataimo007/ataimo-portfolio:v1.0.0"
+export WORKER_IMAGE="docker.io/ataimo007/ataimo-portfolio-worker:v1.0.0"
 infra/azure/scripts/deploy.sh
 export KUBECONFIG="$PWD/infra/azure/.local/kubeconfig"
 kubectl get pods -A
@@ -47,7 +49,7 @@ helm list -A
 
 Ansible mounts the dedicated disk before K3s starts, installs K3s v1.35.9+k3s1 with Traefik disabled, enables secrets encryption and installs matching kubectl plus Helm. It retrieves a private, separate kubeconfig with context ataimo-azure. It never overwrites the local Kind kubeconfig.
 
-The VM builds AMD64 application and worker images from a filtered source archive, imports them directly into K3s containerd and installs dependencies through Helm. No remote registry is required for this first deployment. The source archive excludes environment files, private state, key files and local tooling; review your source tree for any other private material before running deploy.sh. Application credentials are generated anew in the cloud cluster. Existing local data is not migrated.
+The Azure Linux node uses K3s containerd. Supply published AMD64 `APP_IMAGE` and `WORKER_IMAGE` references for manual fresh deployment, preferably immutable digests. GitHub Actions builds and publishes these images, then deploys the registry references through Helm. Ubuntu remains a supported alternative with the legacy local Docker build path; Azure Linux does not install a separate Docker daemon. The source archive excludes environment files, private state, key files and local tooling; review your source tree for any other private material before running deploy.sh. Application credentials are generated anew in the cloud cluster. Existing local data is not migrated.
 
 Envoy Gateway runs in ingress. K3s ServiceLB exposes its LoadBalancer service on the VM's ports 80/443; no separate Azure load balancer or Traefik is installed. Postgres stays in database with separate databases/users for the app, Keycloak and Grafana. Identity, monitoring, streaming and app retain their existing namespaces. Prometheus and broker ports remain internal. Redpanda Console requires a generated administrator password through an Envoy SecurityPolicy. Retrieve passwords privately from the appropriate cluster Secrets.
 

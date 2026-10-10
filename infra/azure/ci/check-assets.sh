@@ -9,3 +9,4 @@ helm lint infra/local-kubernetes/charts/portal-jobs
 helm template portfolio infra/local-kubernetes/charts/service --set-string image=docker.io/example/portfolio:ci --set 'imagePullSecrets[0].name=dockerhub-pull' >/dev/null
 helm template portal-jobs infra/local-kubernetes/charts/portal-jobs --set-string image=docker.io/example/portfolio:ci --set-string workerImage=docker.io/example/worker:ci --set 'imagePullSecrets[0].name=dockerhub-pull' >/dev/null
 ansible-playbook -i localhost, infra/azure/ansible/deploy-registry.yml --syntax-check
+ansible-playbook -i localhost, infra/azure/ansible/provision.yml --syntax-check

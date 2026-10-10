@@ -6,16 +6,75 @@
     helm_version: v4.3.0
     kubectl_version: v1.35.9
     data_device: /dev/disk/azure/scsi1/lun0
+    azure_linux_packages: [curl, ca-certificates, iptables, conntrack-tools, socat, ipset, e2fsprogs, python3, tar, gzip]
   tasks:
     - name: Validate the target architecture
       ansible.builtin.assert:
         that: ansible_architecture == 'x86_64'
         fail_msg: This initial Azure VM profile requires an AMD64 VM size.
-    - name: Install node and image-building dependencies
+    - name: Validate the supported operating system
+      ansible.builtin.assert:
+        that: ansible_distribution in ['Ubuntu', 'AzureLinux', 'Azure Linux', 'Microsoft Azure Linux'] or ansible_os_family == 'AzureLinux'
+        fail_msg: Provisioning supports Ubuntu and Azure Linux 3 images.
+    - name: Install Ubuntu node and image-building dependencies
       ansible.builtin.apt:
         name: [curl, ca-certificates, iptables, conntrack, socat, ipset, e2fsprogs, docker.io, docker-buildx, python3]
         state: present
         update_cache: true
+      when: ansible_distribution == 'Ubuntu'
+    - name: Inspect Azure Linux node packages
+      ansible.builtin.command:
+        argv: '{{ ["rpm", "-q"] + azure_linux_packages }}'
+      register: azure_linux_package_check
+      changed_when: false
+      failed_when: azure_linux_package_check.rc < 0 or azure_linux_package_check.rc > azure_linux_packages | length
+      when: ansible_distribution != 'Ubuntu'
+    - name: Install Azure Linux node dependencies
+      ansible.builtin.command:
+        argv: '{{ ["tdnf", "install", "-y"] + azure_linux_packages }}'
+      when: ansible_distribution != 'Ubuntu' and azure_linux_package_check.rc != 0
+      changed_when: true
+    - name: Inspect SELinux enforcement on Azure Linux
+      ansible.builtin.stat:
+        path: /sys/fs/selinux/enforce
+      register: selinux_enforcement
+      when: ansible_distribution != 'Ubuntu'
+    - name: Require a validated SELinux policy before using an enforcing image
+      ansible.builtin.assert:
+        that: ansible_selinux.status | default('disabled') != 'enabled'
+        fail_msg: This Azure Linux profile requires the standard image without active SELinux. An enforcing image needs a separately validated K3s policy; provisioning does not disable host security.
+      when: ansible_distribution != 'Ubuntu' and selinux_enforcement.stat.exists
+    - name: Load Kubernetes networking modules
+      ansible.builtin.command:
+        argv: [modprobe, '{{ item }}']
+      loop: [overlay, br_netfilter]
+      changed_when: false
+    - name: Persist Kubernetes networking modules
+      ansible.builtin.copy:
+        dest: /etc/modules-load.d/k3s.conf
+        content: "overlay\nbr_netfilter\n"
+        mode: '0644'
+    - name: Install Azure Linux firewall exceptions
+      ansible.builtin.template:
+        src: node-firewall.sh.j2
+        dest: /usr/local/sbin/ataimo-node-firewall
+        mode: '0755'
+      when: ansible_distribution != 'Ubuntu'
+      notify: Restart node firewall
+    - name: Install Azure Linux firewall service
+      ansible.builtin.template:
+        src: node-firewall.service.j2
+        dest: /etc/systemd/system/ataimo-node-firewall.service
+        mode: '0644'
+      when: ansible_distribution != 'Ubuntu'
+      notify: Restart node firewall
+    - name: Apply Azure Linux firewall exceptions before starting K3s
+      ansible.builtin.systemd_service:
+        name: ataimo-node-firewall
+        enabled: true
+        state: started
+        daemon_reload: true
+      when: ansible_distribution != 'Ubuntu'
     - name: Disable active swap
       ansible.builtin.command: swapoff -a
       when: ansible_swaptotal_mb | int > 0
@@ -34,19 +93,22 @@
       ansible.builtin.wait_for:
         path: '{{ data_device }}'
         timeout: 180
+      when: mount_data_disk | default(true) | bool
     - name: Inspect data disk filesystem
       ansible.builtin.command:
         argv: [blkid, -s, TYPE, -o, value, '{{ data_device }}']
       register: disk_type
       changed_when: false
       failed_when: disk_type.rc not in [0, 2]
+      when: mount_data_disk | default(true) | bool
     - name: Refuse to overwrite a different existing filesystem
       ansible.builtin.assert:
         that: disk_type.rc == 2 or disk_type.stdout == 'ext4'
+      when: mount_data_disk | default(true) | bool
     - name: Format only an unformatted dedicated data disk
       ansible.builtin.command:
         argv: [mkfs.ext4, -L, k3s-data, '{{ data_device }}']
-      when: disk_type.rc == 2
+      when: mount_data_disk | default(true) | bool and disk_type.rc == 2
     - name: Mount persistent K3s storage
       ansible.posix.mount:
         path: /var/lib/rancher/k3s
@@ -54,11 +116,19 @@
         fstype: ext4
         opts: defaults
         state: mounted
+      when: mount_data_disk | default(true) | bool
     - name: Create K3s configuration directory
       ansible.builtin.file:
         path: /etc/rancher/k3s
         state: directory
         mode: '0700'
+    - name: Restore private node configuration during an operating system replacement
+      ansible.builtin.unarchive:
+        src: '{{ node_config_archive }}'
+        dest: /
+        remote_src: false
+      when: node_config_archive | default('') | length > 0
+      no_log: true
     - name: Configure K3s before first start
       ansible.builtin.template:
         src: k3s.yaml.j2
@@ -94,13 +164,18 @@
         dest: /etc/systemd/system/k3s.service
         mode: '0644'
       notify: Restart K3s
-    - name: Start K3s and Docker
+    - name: Start K3s
       ansible.builtin.systemd_service:
-        name: '{{ item }}'
+        name: k3s
         enabled: true
         state: started
         daemon_reload: true
-      loop: [k3s, docker]
+    - name: Start Ubuntu image-building service
+      ansible.builtin.systemd_service:
+        name: docker
+        enabled: true
+        state: started
+      when: ansible_distribution == 'Ubuntu'
     - name: Apply service changes before readiness check
       ansible.builtin.meta: flush_handlers
     - name: Wait for K3s API
@@ -146,16 +221,21 @@
     - name: Fetch private kubeconfig
       ansible.builtin.fetch:
         src: /etc/rancher/k3s/k3s.yaml
-        dest: '{{ playbook_dir }}/../.local/kubeconfig.raw'
+        dest: '{{ fetched_kubeconfig | default(playbook_dir + "/../.local/kubeconfig.raw") }}'
         flat: true
       no_log: true
     - name: Restrict local kubeconfig permissions
       ansible.builtin.file:
-        path: '{{ playbook_dir }}/../.local/kubeconfig.raw'
+        path: '{{ fetched_kubeconfig | default(playbook_dir + "/../.local/kubeconfig.raw") }}'
         mode: '0600'
       delegate_to: localhost
       become: false
   handlers:
+    - name: Restart node firewall
+      ansible.builtin.systemd_service:
+        name: ataimo-node-firewall
+        state: restarted
+        daemon_reload: true
     - name: Restart K3s
       ansible.builtin.systemd_service:
         name: k3s

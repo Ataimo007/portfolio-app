@@ -1,0 +1,11 @@
+[Unit]
+Description=Ataimo Kubernetes node firewall exceptions
+After=network-online.target iptables.service
+Requires=iptables.service
+Before=k3s.service
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/ataimo-node-firewall
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target

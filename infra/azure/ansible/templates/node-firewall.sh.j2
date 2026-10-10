@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+iptables -w -N ATAIMO-INPUT 2>/dev/null || iptables -w -S ATAIMO-INPUT >/dev/null
+iptables -w -F ATAIMO-INPUT
+iptables -w -A ATAIMO-INPUT -p tcp -m multiport --dports 80,443,6443,25,465,587,993 -j ACCEPT
+iptables -w -A ATAIMO-INPUT -s 10.42.0.0/16 -j ACCEPT
+iptables -w -A ATAIMO-INPUT -s 10.80.1.0/24 -p udp --dport 8472 -j ACCEPT
+iptables -w -A ATAIMO-INPUT -j RETURN
+iptables -w -C INPUT -j ATAIMO-INPUT 2>/dev/null || iptables -w -I INPUT 1 -j ATAIMO-INPUT

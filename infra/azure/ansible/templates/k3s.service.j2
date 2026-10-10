@@ -2,6 +2,11 @@
 Description=K3s server
 After=network-online.target
 Wants=network-online.target
+RequiresMountsFor=/var/lib/rancher/k3s
+{% if ansible_distribution != 'Ubuntu' %}
+After=ataimo-node-firewall.service
+Requires=ataimo-node-firewall.service
+{% endif %}
 [Service]
 Type=notify
 Environment=PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin

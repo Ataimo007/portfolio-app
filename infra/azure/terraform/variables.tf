@@ -8,6 +8,21 @@ variable "vm_size" {
   type    = string
   default = "Standard_E2as_v5"
 }
+variable "source_image" {
+  type = object({
+    publisher = string
+    offer     = string
+    sku       = string
+    version   = string
+  })
+  default = {
+    publisher = "MicrosoftCBLMariner"
+    offer     = "azure-linux-3"
+    sku       = "azure-linux-3-gen2"
+    version   = "3.20260923.01"
+  }
+  description = "Pinned x64 Gen2 operating system image; changing it replaces the VM while retaining its separately managed data disk."
+}
 variable "admin_username" {
   type    = string
   default = "ataimo"
