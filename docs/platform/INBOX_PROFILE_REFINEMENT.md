@@ -1,5 +1,7 @@
 # Inbox, profile and resume refinement
 
+Subsequent infrastructure update: the production node was switched to Azure Linux 3 on 2026-10-10. See the [OS replacement evidence](../../infra/azure/AZURE_LINUX.md). The Ubuntu assessment below records the earlier state during these UI changes.
+
 The approved resume PDF and its public download now omit Gmail from the contact headline. The contact row remains centered with the original embedded fonts, kerning, colors, underlines and clickable links. A raster comparison at 2× resolution verified every pixel outside that row is identical, including all of page two. No other resume content changed; the previous editable DOCX remains a legacy source.
 
 The owner-only user-detail API combines identity information with the application's company, phone and timezone fields. A separate Personal details card shows full name, email, phone, company, timezone, username, status, sign-in access, verification state, joined date and linked sign-in methods. Missing fields are labelled Not provided. Existing owner authorization and user-management controls are retained.
