@@ -4,6 +4,7 @@ import { execFileSync, spawn } from "node:child_process";
 import { once } from "node:events";
 import { chromium } from "@playwright/test";
 import pg from "pg";
+import https from "node:https";
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 assert.equal(
@@ -156,6 +157,57 @@ try {
   });
   const clientContext = await browser.newContext();
   const ownerContext = await browser.newContext();
+  function requestFor(context) {
+    async function request(url, options = {}) {
+      const cookies = await context.cookies(base);
+      return new Promise((resolve, reject) => {
+        const data =
+          options.data === undefined ? undefined : JSON.stringify(options.data);
+        const req = https.request(
+          url,
+          {
+            method: options.method || "GET",
+            lookup: (_host, _options, callback) =>
+              callback(null, "20.229.210.201", 4),
+            headers: {
+              Cookie: cookies.map((c) => c.name + "=" + c.value).join("; "),
+              ...(data
+                ? {
+                    "Content-Type": "application/json",
+                    "Content-Length": Buffer.byteLength(data),
+                  }
+                : {}),
+              ...options.headers,
+            },
+            timeout: 20000,
+          },
+          (response) => {
+            let text = "";
+            response.on("data", (chunk) => {
+              text += chunk;
+            });
+            response.on("end", () =>
+              resolve({
+                status: () => response.statusCode,
+                json: async () => JSON.parse(text),
+              }),
+            );
+          },
+        );
+        req.on("timeout", () =>
+          req.destroy(Error("Live API request timed out")),
+        );
+        req.on("error", reject);
+        req.end(data);
+      });
+    }
+    return {
+      get: (url) => request(url),
+      post: (url, options) => request(url, { ...options, method: "POST" }),
+    };
+  }
+  const clientAPI = requestFor(clientContext),
+    ownerAPI = requestFor(ownerContext);
   async function login(context, person) {
     const page = await context.newPage();
     await page.goto(base + "/login");
@@ -168,22 +220,17 @@ try {
   await login(clientContext, created[0]);
   await login(ownerContext, created[1]);
   const post = (context, path, data) =>
-    context.request.post(base + path, { headers: { Origin: base }, data });
-  const clientId = (
-    await (await clientContext.request.get(base + "/api/portal")).json()
-  ).user.clientId;
-  const ownerId = (
-    await (await ownerContext.request.get(base + "/api/portal")).json()
-  ).user.clientId;
+    requestFor(context).post(base + path, { headers: { Origin: base }, data });
+  const clientId = (await (await clientAPI.get(base + "/api/portal")).json())
+    .user.clientId;
+  const ownerId = (await (await ownerAPI.get(base + "/api/portal")).json()).user
+    .clientId;
   created[0].clientId = clientId;
   created[1].clientId = ownerId;
-  assert.equal(
-    (await clientContext.request.get(base + "/api/portal/users")).status(),
-    403,
-  );
+  assert.equal((await clientAPI.get(base + "/api/portal/users")).status(), 403);
   assert.equal(
     (
-      await clientContext.request.post(base + "/api/auth/account", {
+      await clientAPI.post(base + "/api/auth/account", {
         headers: { Origin: "https://example.invalid" },
         data: { action: "reset-password" },
       })
@@ -191,7 +238,7 @@ try {
     403,
   );
   const account = await (
-    await clientContext.request.get(base + "/api/auth/account")
+    await clientAPI.get(base + "/api/auth/account")
   ).json();
   assert.ok(account.hasPassword);
   assert.ok(account.sessions.some((s) => s.current));
@@ -232,15 +279,13 @@ try {
     ).status(),
     403,
   );
-  const directory = await ownerContext.request.get(
+  const directory = await ownerAPI.get(
     base + "/api/portal/users?search=" + tag,
   );
   assert.equal(directory.status(), 200);
   assert.equal((await directory.json()).users.length, 2);
   const details = await (
-    await ownerContext.request.get(
-      base + "/api/portal/users?id=" + created[0].id,
-    )
+    await ownerAPI.get(base + "/api/portal/users?id=" + created[0].id)
   ).json();
   assert.ok(details.events.some((e) => e.type === "LOGIN"));
   const chat = await post(ownerContext, "/api/portal/users", {
@@ -261,9 +306,7 @@ try {
   assert.ok(
     (
       await (
-        await ownerContext.request.get(
-          base + "/api/portal/conversations/" + thread,
-        )
+        await ownerAPI.get(base + "/api/portal/conversations/" + thread)
       ).json()
     ).messages.some((m) =>
       m.body.includes("Controlled workspace verification"),
@@ -287,10 +330,7 @@ try {
     ).status(),
     200,
   );
-  assert.equal(
-    (await clientContext.request.get(base + "/api/portal")).status(),
-    401,
-  );
+  assert.equal((await clientAPI.get(base + "/api/portal")).status(), 401);
   assert.equal((await kc("/users/" + created[0].id)).enabled, false);
   assert.equal(
     (
@@ -385,10 +425,7 @@ try {
     ).status(),
     410,
   );
-  assert.equal(
-    (await clientContext.request.get(base + "/api/portal")).status(),
-    401,
-  );
+  assert.equal((await clientAPI.get(base + "/api/portal")).status(), 401);
   created[0].password = nextPassword;
   await clientContext.clearCookies();
   await login(clientContext, created[0]);
@@ -412,10 +449,7 @@ try {
     ).status(),
     200,
   );
-  assert.equal(
-    (await clientContext.request.get(base + "/api/portal")).status(),
-    401,
-  );
+  assert.equal((await clientAPI.get(base + "/api/portal")).status(), 401);
   const deleted = await db.query(
     "SELECT email,display_name,account_status FROM client_profiles WHERE id=$1",
     [clientId],
