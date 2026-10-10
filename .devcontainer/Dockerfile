@@ -1,6 +1,6 @@
 FROM mcr.microsoft.com/devcontainers/typescript-node:1-22-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends python3-venv libreoffice-writer fonts-crosextra-carlito fonts-crosextra-caladea && apt-get clean
-ARG CODEX_VERSION=0.160.0
+ARG CODEX_VERSION=0.162.1
 RUN PUPPETEER_SKIP_DOWNLOAD=true npm install -g @openai/codex@${CODEX_VERSION} \
     @modelcontextprotocol/server-filesystem@2026.8.31 \
     @modelcontextprotocol/server-puppeteer@2025.5.12
