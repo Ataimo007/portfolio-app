@@ -16,4 +16,8 @@ Hardware compatibility is confirmed; application-stack compatibility has not bee
 
 ## Verification evidence
 
-Resume raster comparison passed. Lint and TypeScript checks passed before CI. Browser tests cover client conversation selection, preserved chat formatting, scroll-chaining styles, user detail fields and Inbox/Sent tab switching. Production rollout and CI results will be recorded after verification. Controlled browser fixtures do not create live users.
+Resume raster comparison passed. Lint and TypeScript checks passed before CI. [Delivery run 38041148500](https://github.com/Ataimo007/portfolio-app/actions/runs/38041148500) successfully built and deployed application commit `03bc7b26b913b86f02116ac845aad0be68db8d7c`. All 98 desktop/mobile browser tests passed, alongside production build, email/push tests and infrastructure checks. Browser coverage includes client conversation selection, preserved chat formatting, actual wheel scrolling from chat into the page, user detail fields and Inbox/Sent tab switching.
+
+Desktop and mobile screenshots of user details, chat and mailbox were reviewed. These use controlled fixtures, not live user data. A separate live owner-only API check verified contact, company, timezone, identity metadata and linked sign-in fields against the existing owner profile. Its temporary verification session was removed and the remaining matching session count confirmed zero. No test user accounts were created.
+
+The HTTPS resume download matches the approved local PDF with SHA-256 `183057673eca307cd0c9f2b4e0ee01a7d97bc33ceb47a03da55393d0f7b9e004`. Application and worker rollouts and live HTTPS health checks passed. The production operating system remains Ubuntu; Azure Linux deployment is an assessed future migration, not deployed functionality.
