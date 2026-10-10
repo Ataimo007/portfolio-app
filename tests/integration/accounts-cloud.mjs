@@ -167,6 +167,7 @@ try {
           url,
           {
             method: options.method || "GET",
+            family: 4,
             lookup: (_host, _options, callback) =>
               callback(null, "20.229.210.201", 4),
             headers: {
