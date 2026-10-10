@@ -39,6 +39,7 @@ jobs:
         if: always()
         with:
           name: responsive-review
+          include-hidden-files: true
           path: .impeccable/review/*.png
           retention-days: 7
           if-no-files-found: ignore

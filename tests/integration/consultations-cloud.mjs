@@ -39,13 +39,11 @@ const sql = (text) =>
     ],
     { input: text, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"] },
   ).trim();
-const accounts = ["owner", "client", "client", "demo-viewer", "client"].map(
-  (role) => ({
-    id: randomUUID(),
-    role,
-    token: randomBytes(32).toString("base64url"),
-  }),
-);
+const accounts = ["owner", "client", "client"].map((role) => ({
+  id: randomUUID(),
+  role,
+  token: randomBytes(32).toString("base64url"),
+}));
 async function call(
   account,
   path,
@@ -195,5 +193,15 @@ try {
   const ids = accounts.map((a) => `'${a.id}'`).join(",");
   sql(
     `BEGIN;CREATE TEMP TABLE fixture_events AS SELECT id FROM event_outbox WHERE aggregate_id IN(SELECT id FROM consultancy_jobs WHERE client_id IN(${ids})) OR aggregate_id IN(SELECT id FROM conversations WHERE client_id IN(${ids}));DELETE FROM portal_notifications WHERE client_id IN(${ids}) OR event_id IN(SELECT id FROM fixture_events);DELETE FROM processed_events WHERE id IN(SELECT id FROM fixture_events);DELETE FROM event_outbox WHERE id IN(SELECT id FROM fixture_events);DELETE FROM messages WHERE sender_id IN(${ids});DELETE FROM bookings WHERE job_id IN(SELECT id FROM consultancy_jobs WHERE client_id IN(${ids}));DELETE FROM consultancy_jobs WHERE client_id IN(${ids});DELETE FROM conversation_messages WHERE sender_id IN(${ids});DELETE FROM mail_sends WHERE client_id IN(${ids});DELETE FROM client_profiles WHERE id IN(${ids});${publishedId ? `DELETE FROM availability_windows WHERE id='${publishedId}';` : ""}COMMIT;`,
+  );
+  sql(
+    `DELETE FROM api_rate_limits WHERE key IN (${accounts.map((a) => "'actions:" + a.id + "'").join(",")});`,
+  );
+  assert.equal(
+    sql(`SELECT count(*) FROM client_profiles WHERE id IN(${ids})`),
+    "0",
+  );
+  console.log(
+    "Temporary cloud consultation profiles, sessions, jobs and availability removed",
   );
 }

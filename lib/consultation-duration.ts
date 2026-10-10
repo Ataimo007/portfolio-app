@@ -16,6 +16,17 @@ export function durationEnd(start: string, value: number, unit: DurationUnit) {
   return date.toISOString();
 }
 export function durationLabel(start: string, end: string) {
+  const startDate = new Date(start),
+    endDate = new Date(end);
+  const months =
+    (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 +
+    endDate.getUTCMonth() -
+    startDate.getUTCMonth();
+  if (
+    months > 0 &&
+    durationEnd(start, months, "months") === endDate.toISOString()
+  )
+    return `${months} month${months === 1 ? "" : "s"}`;
   const minutes = Math.round(
     (new Date(end).getTime() - new Date(start).getTime()) / 60000,
   );
