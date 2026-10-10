@@ -54,7 +54,7 @@ test("profile groups account settings and saves contact and timezone preferences
     return r.fulfill({ json: { message: "Profile updated." } });
   });
   await page.goto("/portal");
-  await page.getByRole("tab", { name: "Accounts", exact: true }).click();
+  await page.getByRole("tab", { name: "Account", exact: true }).click();
   await expect(
     page.getByRole("heading", { name: "Your account." }),
   ).toBeVisible();

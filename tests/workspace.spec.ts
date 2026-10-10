@@ -92,7 +92,7 @@ test("client and owner workspaces preserve mobile layout and private states", as
   await expect(
     page.getByRole("button", { name: "Mailbox", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("tab", { name: "Accounts" }).click();
+  await page.getByRole("tab", { name: "Account" }).click();
   await expect(page.getByLabel("Company or organization")).toHaveValue(
     "Example",
   );

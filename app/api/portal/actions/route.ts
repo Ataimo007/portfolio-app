@@ -11,17 +11,28 @@ import {
 } from "@/lib/portal-http";
 import { event, jobAccess, owners } from "@/lib/portal";
 
+import { durationEnd } from "@/lib/consultation-duration";
+
+const durationFields = {
+  duration: z.number().int().min(1).max(525600).default(30),
+  durationUnit: z
+    .enum(["minutes", "hours", "days", "weeks", "months"])
+    .default("minutes"),
+};
 const uuid = z.string().uuid();
 const schema = z.discriminatedUnion("action", [
   z.object({
     action: z.literal("request"),
     slotId: uuid,
+    startsAt: z.string().datetime({ offset: true }).optional(),
+    ...durationFields,
     title: z.string().trim().min(3).max(200),
     description: z.string().trim().min(10).max(4000),
   }),
   z.object({
     action: z.literal("availability"),
     startsAt: z.string().datetime({ offset: true }),
+    ...durationFields,
   }),
   z.object({
     action: z.literal("decision"),
@@ -94,35 +105,49 @@ export async function POST(request: Request) {
             "You already have five requests awaiting a decision.",
           );
         const slot = await client.query(
-          `SELECT * FROM availability_windows WHERE id=$1 AND starts_at>now() FOR UPDATE`,
+          `SELECT * FROM availability_windows WHERE id=$1 AND ends_at>now() FOR UPDATE`,
           [input.slotId],
         );
         if (!slot.rowCount)
           throw new PortalError(409, "That slot is no longer available.");
+        const startsAt =
+          input.startsAt || new Date(slot.rows[0].starts_at).toISOString();
+        const endsAt = durationEnd(
+          startsAt,
+          input.duration,
+          input.durationUnit,
+        );
+        if (
+          new Date(startsAt).getTime() < Date.now() + 30 * 60000 ||
+          new Date(startsAt) < new Date(slot.rows[0].starts_at) ||
+          new Date(endsAt) > new Date(slot.rows[0].ends_at)
+        )
+          throw new PortalError(
+            400,
+            "Choose a future time and duration within the available window.",
+          );
         const taken = await client.query(
-          "SELECT id FROM bookings WHERE slot_id=$1 AND status IN ('approved','completed')",
-          [input.slotId],
+          "SELECT id FROM bookings WHERE status IN ('approved','completed') AND tstzrange(starts_at,ends_at,'[)') && tstzrange($1::timestamptz,$2::timestamptz,'[)')",
+          [startsAt, endsAt],
         );
         if (taken.rowCount)
-          throw new PortalError(409, "That slot has already been confirmed.");
+          throw new PortalError(
+            409,
+            "That time overlaps a confirmed consultation. Choose another time.",
+          );
         const duplicate = await client.query(
-          "SELECT b.id FROM bookings b JOIN consultancy_jobs j ON j.id=b.job_id WHERE j.client_id=$1 AND b.slot_id=$2 AND b.status='pending'",
-          [user.clientId, input.slotId],
+          "SELECT b.id FROM bookings b JOIN consultancy_jobs j ON j.id=b.job_id WHERE j.client_id=$1 AND b.slot_id=$2 AND b.starts_at=$3 AND b.status='pending'",
+          [user.clientId, input.slotId, startsAt],
         );
         if (duplicate.rowCount)
-          throw new PortalError(409, "You have already requested that slot.");
+          throw new PortalError(409, "You have already requested that time.");
         const job = await client.query(
           "INSERT INTO consultancy_jobs(client_id,title,description) VALUES($1,$2,$3) RETURNING id",
           [user.clientId, input.title, input.description],
         );
         await client.query(
           "INSERT INTO bookings(job_id,slot_id,starts_at,ends_at) VALUES($1,$2,$3,$4)",
-          [
-            job.rows[0].id,
-            input.slotId,
-            slot.rows[0].starts_at,
-            slot.rows[0].ends_at,
-          ],
+          [job.rows[0].id, input.slotId, startsAt, endsAt],
         );
         await client.query(
           "INSERT INTO job_history(job_id,status,actor_id) VALUES($1,'requested',$2)",
@@ -202,11 +227,21 @@ export async function POST(request: Request) {
             400,
             "Choose a time between 30 minutes and six months from now.",
           );
-        await client.query(
-          "INSERT INTO availability_windows(starts_at,ends_at) VALUES($1,$1::timestamptz+interval '30 minutes')",
-          [input.startsAt],
+        const endsAt = durationEnd(
+          input.startsAt,
+          input.duration,
+          input.durationUnit,
         );
-        return { message: "30-minute consultation slot published." };
+        if (new Date(endsAt).getTime() > date.getTime() + 366 * 86400000)
+          throw new PortalError(400, "Availability can span up to one year.");
+        await client.query(
+          "INSERT INTO availability_windows(starts_at,ends_at) VALUES($1,$2)",
+          [
+            input.startsAt,
+            durationEnd(input.startsAt, input.duration, input.durationUnit),
+          ],
+        );
+        return { message: "Consultation availability published." };
       }
       if (input.action === "decision") {
         const initial = await client.query(
@@ -257,8 +292,8 @@ export async function POST(request: Request) {
         ]);
         if (input.decision === "approved") {
           const others = await client.query(
-            "UPDATE bookings SET status='declined',decided_at=now(),decided_by=$2 WHERE slot_id=$1 AND status='pending' RETURNING job_id",
-            [booking.slot_id, user.clientId],
+            "UPDATE bookings SET status='declined',decided_at=now(),decided_by=$2 WHERE status='pending' AND tstzrange(starts_at,ends_at,'[)') && tstzrange($1::timestamptz,$3::timestamptz,'[)') RETURNING job_id",
+            [booking.starts_at, user.clientId, booking.ends_at],
           );
           for (const other of others.rows) {
             const job = await client.query(

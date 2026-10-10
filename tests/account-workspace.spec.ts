@@ -90,7 +90,7 @@ test("accounts remain in-app and confirmations dismiss automatically", async ({
 }) => {
   await fixture(page);
   await page.goto("/portal?view=accounts");
-  await expect(page.getByRole("tab", { name: "Accounts" })).toHaveAttribute(
+  await expect(page.getByRole("tab", { name: "Account" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -269,7 +269,7 @@ test("mobile workspace tabs stay at the bottom and desktop tabs stay in flow", a
   expect(await tabs.evaluate((el) => getComputedStyle(el).position)).toBe(
     info.project.name === "mobile" ? "fixed" : "static",
   );
-  await page.getByRole("tab", { name: "Accounts" }).click();
+  await page.getByRole("tab", { name: "Account" }).click();
   await expect(
     page.getByRole("heading", { name: "Your workspace", exact: true }),
   ).toHaveCount(0);

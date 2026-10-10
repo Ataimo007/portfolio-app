@@ -35,3 +35,10 @@ jobs:
         with:
           name: playwright-results
           path: test-results/
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: responsive-review
+          path: .impeccable/review/*.png
+          retention-days: 7
+          if-no-files-found: ignore

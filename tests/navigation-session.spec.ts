@@ -22,7 +22,7 @@ test("navigation follows session changes without exposing identity data", async 
   await expect(page).toHaveURL(/\/contact$/);
   if (await mobile.isVisible()) await mobile.click();
   await expect(
-    navigation.getByRole("link", { name: "Accounts", exact: true }),
+    navigation.getByRole("link", { name: "Profile", exact: true }),
   ).toHaveAttribute("href", "/portal?view=accounts");
   authenticated = false;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));

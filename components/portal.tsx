@@ -7,6 +7,12 @@ import {
   type FormEvent,
 } from "react";
 import Link from "next/link";
+import {
+  durationEnd,
+  durationLabel,
+  type DurationUnit,
+} from "@/lib/consultation-duration";
+import DurationFields from "./duration-fields";
 import ProfileSettings from "./profile-settings";
 import OwnerMail from "./owner-mail";
 import UserManagement from "./user-management";
@@ -68,6 +74,7 @@ type Data = {
   user: User;
   jobs: Job[];
   slots: Slot[];
+  reserved?: { starts_at: string; ends_at: string }[];
   notifications: { id: string; kind: string; title: string }[];
 };
 const label = (value: string) =>
@@ -103,6 +110,7 @@ export default function Portal({
   const [conversations, setConversations] = useState<
     { id: string; client_id: string; name: string; preview: string }[]
   >([]);
+  const [now, setNow] = useState(() => Date.now());
   const [data, setData] = useState<Data | null>(null),
     [loading, setLoading] = useState(true),
     [signedOut, setSignedOut] = useState(false),
@@ -120,6 +128,9 @@ export default function Portal({
     [day, setDay] = useState(""),
     [slotId, setSlotId] = useState(""),
     [text, setText] = useState("");
+  const [requestedStart, setRequestedStart] = useState("");
+  const [duration, setDuration] = useState(30);
+  const [durationUnit, setDurationUnit] = useState<DurationUnit>("minutes");
   const notificationTarget = useRef("");
   const fetching = useRef(false),
     nonce = useRef<string | null>(null),
@@ -134,6 +145,7 @@ export default function Portal({
         api("/api/portal/conversations"),
       ]);
       setData(workspace);
+      setNow(Date.now());
       setConversations(threads.conversations);
       const params = new URLSearchParams(window.location.search);
       const target =
@@ -341,12 +353,16 @@ export default function Portal({
       await action({
         action: "request",
         slotId,
+        startsAt: requestedStart,
+        duration,
+        durationUnit,
         title: values.get("title"),
         description: values.get("description"),
       })
     ) {
       form.reset();
       setSlotId("");
+      setRequestedStart("");
     }
   }
   async function send(event: FormEvent) {
@@ -485,77 +501,56 @@ export default function Portal({
     { id: "consultations", title: "Consultations", icon: CalendarDays },
     { id: "messages", title: "Messages", icon: MessageSquare },
     ...(user.isOwner ? [{ id: "users", title: "Users", icon: Users }] : []),
-    { id: "accounts", title: "Accounts", icon: UserRound },
+    { id: "accounts", title: "Account", icon: UserRound },
   ];
-  const dayKey = (value: string) =>
-    new Intl.DateTimeFormat("en-CA", {
-      timeZone: zone,
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-    }).format(new Date(value));
+  const dayFormatter = new Intl.DateTimeFormat("en-CA", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  });
+  const dayKey = (value: string) => dayFormatter.format(new Date(value));
   const offset = (month.getDay() + 6) % 7,
     days = new Date(month.getFullYear(), month.getMonth() + 1, 0).getDate();
-  const currentSlots = slots.filter((s) => dayKey(s.starts_at) === day);
+  const startOptions = (key: string) => {
+    const result: (Slot & { time: string })[] = [];
+    for (const slot of slots) {
+      const slotStart = new Date(slot.starts_at).getTime();
+      const dayStart = new Date(key + "T00:00:00Z").getTime();
+      const from = Math.max(slotStart, now + 30 * 60000, dayStart - 86400000);
+      const until = Math.min(
+        new Date(slot.ends_at).getTime(),
+        new Date(key + "T00:00:00Z").getTime() + 2 * 86400000,
+      );
+      for (
+        let time =
+          slotStart + Math.ceil((from - slotStart) / 1800000) * 1800000;
+        time < until;
+        time += 1800000
+      ) {
+        const startsAt = new Date(time).toISOString();
+        if (dayKey(startsAt) !== key) continue;
+        const endsAt = durationEnd(startsAt, duration, durationUnit);
+        if (new Date(endsAt) > new Date(slot.ends_at)) continue;
+        if (
+          data.reserved?.some(
+            (b) =>
+              new Date(b.starts_at) < new Date(endsAt) &&
+              new Date(b.ends_at).getTime() > time,
+          )
+        )
+          continue;
+        result.push({ ...slot, time: startsAt });
+      }
+    }
+    return result;
+  };
+  const currentSlots = day ? startOptions(day) : [];
   const readOnly =
     !user.isOwner &&
     (!user.roles.includes("client") || user.roles.includes("demo-viewer"));
   return (
     <div className="page portal-page">
-      {section === "overview" && (
-        <>
-          <div className="portal-heading">
-            <div>
-              <h1>
-                {user.isOwner ? "Consultancy workspace" : "Your workspace"}
-              </h1>
-              <p>
-                Welcome, {user.name}.{" "}
-                {user.isOwner
-                  ? "Review requests and guide each engagement."
-                  : "From the first conversation to the finished work."}
-              </p>
-            </div>
-          </div>
-          <div className="portal-meta">
-            <span>
-              {user.isOwner
-                ? "Owner access"
-                : readOnly
-                  ? "Read-only access"
-                  : "Client access"}
-            </span>
-            <span>{user.email}</span>
-            <Link href="/status">Platform status</Link>
-          </div>
-        </>
-      )}
-      {readOnly && (
-        <p className="portal-note">
-          This account is read-only. Booking and messaging need a client
-          invitation.
-        </p>
-      )}
-      {error && (
-        <p className="portal-error" role="alert">
-          {error}{" "}
-          <button onClick={refresh} className="portal-inline">
-            <RefreshCw size={16} /> Retry
-          </button>
-        </p>
-      )}
-      {notice && (
-        <p className="portal-success" role="status">
-          {notice}
-          <button
-            className="portal-inline"
-            aria-label="Dismiss confirmation"
-            onClick={() => setNotice("")}
-          >
-            <X size={16} />
-          </button>
-        </p>
-      )}
       <nav
         className="workspace-navigation"
         aria-label="Workspace sections"
@@ -596,12 +591,67 @@ export default function Portal({
           </button>
         ))}
       </nav>
+      {notice && (
+        <p className="portal-success" role="status">
+          {notice}
+          <button
+            className="portal-inline"
+            aria-label="Dismiss confirmation"
+            onClick={() => setNotice("")}
+          >
+            <X size={16} />
+          </button>
+        </p>
+      )}
       <div
         id="workspace-content"
         role="tabpanel"
         aria-labelledby={"workspace-tab-" + section}
         tabIndex={0}
       >
+        {section === "overview" && (
+          <>
+            <div className="portal-heading">
+              <div>
+                <h1>
+                  {user.isOwner ? "Consultancy workspace" : "Your workspace"}
+                </h1>
+                <p>
+                  Welcome, {user.name}.{" "}
+                  {user.isOwner
+                    ? "Review requests and guide each engagement."
+                    : "From the first conversation to the finished work."}
+                </p>
+              </div>
+            </div>
+            <div className="portal-meta">
+              <span>
+                {user.isOwner
+                  ? "Owner access"
+                  : readOnly
+                    ? "Read-only access"
+                    : "Client access"}
+              </span>
+              <span>{user.email}</span>
+              <Link href="/status">Platform status</Link>
+            </div>
+          </>
+        )}
+        {readOnly && (
+          <p className="portal-note">
+            This account is read-only. Booking and messaging need a client
+            invitation.
+          </p>
+        )}
+        {error && (
+          <p className="portal-error" role="alert">
+            {error}{" "}
+            <button onClick={refresh} className="portal-inline">
+              <RefreshCw size={16} /> Retry
+            </button>
+          </p>
+        )}
+
         {section === "overview" && (
           <section
             className="workspace-summary"
@@ -680,27 +730,29 @@ export default function Portal({
                 All consultations
               </button>
             )}
-            <div className="portal-filters" aria-label="Filter engagements">
-              {[
-                "all",
-                "requested",
-                "booked",
-                "active",
-                "completed",
-                "cancelled",
-              ].map((f) => (
-                <button
-                  key={f}
-                  className="portal-filter"
-                  aria-pressed={filter === f}
-                  onClick={() => {
-                    setConsultationFocus("");
-                    setFilter(f);
-                  }}
-                >
-                  {f === "all" ? "All work" : label(f)}
-                </button>
-              ))}
+            <div className="engagement-filter">
+              <label htmlFor="engagement-status">Engagement status</label>
+              <select
+                id="engagement-status"
+                value={filter}
+                onChange={(event) => {
+                  setConsultationFocus("");
+                  setFilter(event.target.value);
+                }}
+              >
+                {[
+                  "all",
+                  "requested",
+                  "booked",
+                  "active",
+                  "completed",
+                  "cancelled",
+                ].map((status) => (
+                  <option key={status} value={status}>
+                    {status === "all" ? "All work" : label(status)}
+                  </option>
+                ))}
+              </select>
             </div>
             {!visible.length && (
               <div className="portal-empty">
@@ -732,7 +784,8 @@ export default function Portal({
                   <h3>{item.title}</h3>
                   <p>{item.description}</p>
                   <p className="portal-date">
-                    {date(item.starts_at, zone)} · 30 minutes
+                    {date(item.starts_at, zone)} ·{" "}
+                    {durationLabel(item.starts_at, item.ends_at)}
                   </p>
                   <p>
                     {item.booking_status === "pending"
@@ -1181,8 +1234,9 @@ export default function Portal({
                   : "Request a consultation"}
               </h2>
               <p>
-                30 minutes to explore your architecture, API platform, or
-                engineering challenge. Requests require approval.
+                Choose a time and duration to explore your architecture, API
+                platform, or engineering challenge. Every request requires
+                approval.
               </p>
             </div>
           </div>
@@ -1242,9 +1296,7 @@ export default function Portal({
                 ))}
                 {Array.from({ length: days }, (_, i) => {
                   const key = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, "0")}-${String(i + 1).padStart(2, "0")}`;
-                  const available = slots.some(
-                    (s) => dayKey(s.starts_at) === key,
-                  );
+                  const available = startOptions(key).length > 0;
                   return (
                     <button
                       key={key}
@@ -1254,6 +1306,7 @@ export default function Portal({
                       onClick={() => {
                         setDay(key);
                         setSlotId("");
+                        setRequestedStart("");
                       }}
                     >
                       {i + 1}
@@ -1274,11 +1327,14 @@ export default function Portal({
                   onSubmit={async (e) => {
                     e.preventDefault();
                     const f = e.currentTarget;
-                    const value = new FormData(f).get("startsAt") as string;
+                    const values = new FormData(f);
+                    const value = values.get("startsAt") as string;
                     if (
                       await action({
                         action: "availability",
                         startsAt: new Date(value).toISOString(),
+                        duration: Number(values.get("duration")),
+                        durationUnit: values.get("durationUnit"),
                       })
                     )
                       f.reset();
@@ -1294,18 +1350,21 @@ export default function Portal({
                     type="datetime-local"
                     required
                   />
+                  <DurationFields />
                   <p>
                     Enter the time in your device timezone:{" "}
                     {Intl.DateTimeFormat().resolvedOptions().timeZone}.
                   </p>
                   <button className="button primary" disabled={busy}>
-                    {busy ? "Publishing…" : "Publish 30-minute slot"}
+                    {busy ? "Publishing…" : "Publish availability"}
                   </button>
                   <h3>Upcoming availability</h3>
                   {slots.length ? (
-                    slots
-                      .slice(0, 8)
-                      .map((s) => <p key={s.id}>{date(s.starts_at, zone)}</p>)
+                    slots.slice(0, 8).map((s) => (
+                      <p key={s.id}>
+                        {date(s.starts_at, zone)} — {date(s.ends_at, zone)}
+                      </p>
+                    ))
                   ) : (
                     <p>No slots published yet.</p>
                   )}
@@ -1313,19 +1372,34 @@ export default function Portal({
               ) : (
                 <form onSubmit={request} className="portal-form">
                   <h3>{day ? "Choose a time" : "Choose an available day"}</h3>
+                  <DurationFields
+                    value={duration}
+                    unit={durationUnit}
+                    onChange={(value, unit) => {
+                      setDuration(value);
+                      setDurationUnit(unit);
+                      setSlotId("");
+                      setRequestedStart("");
+                    }}
+                  />
                   <div className="portal-times">
                     {currentSlots.map((s) => (
                       <button
-                        key={s.id}
+                        key={s.id + s.time}
                         type="button"
                         className="portal-filter"
-                        aria-pressed={slotId === s.id}
-                        onClick={() => setSlotId(s.id)}
+                        aria-pressed={
+                          slotId === s.id && requestedStart === s.time
+                        }
+                        onClick={() => {
+                          setSlotId(s.id);
+                          setRequestedStart(s.time);
+                        }}
                       >
                         {new Intl.DateTimeFormat("en", {
                           timeZone: zone,
                           timeStyle: "short",
-                        }).format(new Date(s.starts_at))}
+                        }).format(new Date(s.time))}
                       </button>
                     ))}
                   </div>

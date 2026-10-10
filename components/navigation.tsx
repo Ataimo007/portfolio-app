@@ -155,7 +155,7 @@ export default function Navigation() {
           }
         >
           {account === "authenticated"
-            ? "Accounts"
+            ? "Profile"
             : account === "anonymous"
               ? "Login"
               : "Account"}
@@ -166,7 +166,15 @@ export default function Navigation() {
             method="post"
             className="navigation-signout"
           >
-            <button type="submit">Log out</button>
+            <a
+              href="/logout"
+              onClick={(event) => {
+                event.preventDefault();
+                event.currentTarget.closest("form")?.requestSubmit();
+              }}
+            >
+              Log out
+            </a>
           </form>
         )}
         {!installed && (
