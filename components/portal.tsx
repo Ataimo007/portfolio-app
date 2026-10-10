@@ -42,6 +42,7 @@ type User = {
 type Job = {
   id: string;
   client_id: string;
+  client_messages?: number;
   title: string;
   description: string;
   status: string;
@@ -463,10 +464,13 @@ export default function Portal({
     ...jobs
       .filter(
         (j) =>
+          (j.client_messages || 0) > 0 &&
           !conversations.some((c) => c.client_id === j.client_id) &&
           !jobs.some(
             (other, i) =>
-              i < jobs.indexOf(j) && other.client_id === j.client_id,
+              i < jobs.indexOf(j) &&
+              (other.client_messages || 0) > 0 &&
+              other.client_id === j.client_id,
           ),
       )
       .map((j) => ({
@@ -975,7 +979,9 @@ export default function Portal({
                 <div className="chat-heading">
                   <h2>
                     {job
-                      ? job.title
+                      ? user.isOwner
+                        ? job.client_name
+                        : "Your conversation with Ataimo"
                       : direct
                         ? user.isOwner
                           ? direct.name

@@ -77,7 +77,7 @@ export async function POST(request: Request) {
           "UPDATE client_profiles SET timezone=$1,company=coalesce($3,company),phone=coalesce($4,phone) WHERE id=$2",
           [input.timezone, user.clientId, input.company, input.phone],
         );
-        return { message: "Timezone updated." };
+        return { message: "Profile preferences updated." };
       }
       if (input.action === "request") {
         await client.query(
