@@ -103,6 +103,10 @@ test("client and owner workspaces preserve mobile layout and private states", as
   await expect(
     page.getByRole("button", { name: "Message Ataimo" }),
   ).toHaveCount(0);
+  await page
+    .getByRole("complementary", { name: "Your conversations" })
+    .getByRole("button", { name: /Ataimo/ })
+    .click();
   await expect(page.getByLabel("Your message", { exact: true })).toBeVisible();
   expect(
     await page.evaluate(
@@ -126,6 +130,15 @@ test("client and owner workspaces preserve mobile layout and private states", as
     page.getByText("Controlled mail fixture", { exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("To", { exact: true })).toBeVisible();
+  const folders = page.getByRole("tablist", { name: "Mailbox folders" });
+  await expect(
+    folders.getByRole("tab", { name: "Inbox", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await folders.getByRole("tab", { name: "Sent", exact: true }).click();
+  await expect(
+    folders.getByRole("tab", { name: "Sent", exact: true }),
+  ).toHaveAttribute("aria-selected", "true");
+  await folders.getByRole("tab", { name: "Inbox", exact: true }).click();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,

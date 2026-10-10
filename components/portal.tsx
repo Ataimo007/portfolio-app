@@ -253,41 +253,18 @@ export default function Portal({
     const timer = setTimeout(() => setNotice(""), 5000);
     return () => clearTimeout(timer);
   }, [notice]);
-  useEffect(() => {
-    if (section !== "messages" || !data || data.user.isOwner || selected)
-      return;
-    const controller = new AbortController();
-    const timer = setTimeout(async () => {
-      const existing = conversations[0];
-      if (existing) {
-        setChatLoading(true);
-        setSelected("direct:" + existing.id);
-        return;
-      }
-      if (
-        !data.user.roles.includes("client") ||
-        data.user.roles.includes("demo-viewer")
-      )
-        return;
-      try {
-        const result = await api("/api/portal/conversations", {
-          method: "POST",
-          signal: controller.signal,
-        });
-        if (!controller.signal.aborted) {
-          setChatLoading(true);
-          setSelected("direct:" + result.id);
-          await refresh();
-        }
-      } catch (e) {
-        if (!controller.signal.aborted) setChatError((e as Error).message);
-      }
-    }, 0);
-    return () => {
-      clearTimeout(timer);
-      controller.abort();
-    };
-  }, [section, data, selected, conversations, refresh]);
+  async function startClientConversation() {
+    setChatLoading(true);
+    setChatError("");
+    try {
+      const result = await api("/api/portal/conversations", { method: "POST" });
+      selectThread("direct:" + result.id);
+      await refresh();
+    } catch (error) {
+      setChatError((error as Error).message);
+      setChatLoading(false);
+    }
+  }
   function selectThread(id: string) {
     if (id === selected) return;
     setMessages([]);
@@ -673,7 +650,7 @@ export default function Portal({
           </section>
         )}
         {section === "messages" && user.isOwner && (
-          <div className="portal-section-heading">
+          <div className="portal-section-heading message-channel-heading">
             <h2>Messages</h2>
             <label className="message-view-switch">
               Channel
@@ -995,10 +972,12 @@ export default function Portal({
         {section === "messages" &&
           (!user.isOwner || messageView === "chat") && (
             <div className="workspace-chat" data-selected={Boolean(selected)}>
-              {user.isOwner && (
+              {
                 <aside
                   className="client-conversations"
-                  aria-label="Client conversations"
+                  aria-label={
+                    user.isOwner ? "Client conversations" : "Your conversations"
+                  }
                 >
                   <h3>Conversations</h3>
                   <ul>
@@ -1011,20 +990,38 @@ export default function Portal({
                           }
                           onClick={() => selectThread(c.id)}
                         >
-                          <strong>{c.name}</strong>
+                          <strong>{user.isOwner ? c.name : "Ataimo"}</strong>
                           <span>{c.preview || "Start a conversation"}</span>
                         </button>
                       </li>
                     ))}
                   </ul>
-                  {!threadChoices.length && (
-                    <p>
-                      No conversations yet. Open Users to start one with a
-                      client.
+                  {chatError && !selected && (
+                    <p className="portal-error" role="alert">
+                      {chatError}
                     </p>
                   )}
+                  {!threadChoices.length &&
+                    (user.isOwner ? (
+                      <p>
+                        No conversations yet. Open Users to start one with a
+                        client.
+                      </p>
+                    ) : (
+                      <button
+                        disabled={chatLoading || readOnly}
+                        onClick={() => void startClientConversation()}
+                      >
+                        <strong>Ataimo</strong>
+                        <span>
+                          {chatLoading
+                            ? "Opening conversation…"
+                            : "Start a conversation"}
+                        </span>
+                      </button>
+                    ))}
                 </aside>
-              )}
+              }
               <aside
                 className="portal-conversation"
                 aria-label="Private job conversation"
@@ -1041,7 +1038,7 @@ export default function Portal({
                           : "Your conversation with Ataimo"
                         : "Private conversation"}
                   </h2>
-                  {user.isOwner && selected && (
+                  {selected && (
                     <button
                       className="portal-icon chat-back"
                       aria-label="Back to conversations"
@@ -1105,7 +1102,7 @@ export default function Portal({
                   <div className="portal-empty">
                     <MessageSquare size={28} />
                     <p>
-                      Choose a client to open your conversation and chat
+                      Choose a conversation to open your messages and chat
                       history.
                     </p>
                   </div>

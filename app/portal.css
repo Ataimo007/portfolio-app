@@ -1386,3 +1386,94 @@
     margin: 0;
   }
 }
+.user-information {
+  padding: var(--spacing-layout-lg);
+  border: 1px solid var(--color-border-grid);
+  border-radius: var(--radius-panel);
+  background: var(--color-bg-surface);
+  margin-block: var(--spacing-layout-lg);
+}
+.user-information dl {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--spacing-layout-lg);
+  margin: var(--spacing-layout-lg) 0 0;
+}
+.user-information dt {
+  font-size: var(--text-action);
+  color: var(--color-text-muted);
+  margin-bottom: var(--spacing-layout-xs);
+}
+.user-information dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.message-channel-heading {
+  margin-bottom: var(--spacing-layout-lg);
+  gap: var(--spacing-layout-md);
+}
+.workspace-chat .portal-messages,
+.workspace-mail-list,
+.portal-compose textarea {
+  overscroll-behavior-y: auto;
+}
+.owner-mail > .portal-section-heading {
+  margin-bottom: var(--spacing-layout-lg);
+  gap: var(--spacing-layout-md);
+}
+.mailbox-tabs {
+  display: flex;
+  border-bottom: 1px solid var(--color-border-grid);
+  margin-bottom: var(--spacing-layout-lg);
+}
+.mailbox-tabs [role="tab"] {
+  flex: 1;
+  padding: var(--spacing-layout-md);
+  background: transparent;
+  color: var(--color-text-muted);
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    color 180ms var(--ease-terminal),
+    border-color 180ms var(--ease-terminal),
+    background-color 180ms var(--ease-terminal),
+    transform 180ms var(--ease-terminal);
+}
+.mailbox-tabs [aria-selected="true"] {
+  color: var(--color-accent-primary);
+  background: var(--color-accent-dim);
+  border-bottom-color: var(--color-accent-primary);
+}
+.mailbox-tabs [role="tab"]:active {
+  transform: scale(0.98);
+}
+@media (max-width: 700px) {
+  .user-information dl {
+    grid-template-columns: 1fr;
+  }
+  .message-channel-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .message-channel-heading h2 {
+    margin: 0;
+  }
+  .message-view-switch {
+    display: grid;
+    gap: var(--spacing-layout-sm);
+  }
+  .owner-mail > .portal-section-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .workspace-chat .chat-back {
+    display: grid;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .mailbox-tabs [role="tab"] {
+    transition: none;
+  }
+}

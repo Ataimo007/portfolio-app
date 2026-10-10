@@ -130,7 +130,7 @@ test("accounts remain in-app and confirmations dismiss automatically", async ({
     ),
   ).toBe(true);
 });
-test("chat opens directly for clients and supports safe formatting", async ({
+test("clients choose a conversation and chat supports safe formatting", async ({
   page,
 }) => {
   await fixture(page);
@@ -141,6 +141,13 @@ test("chat opens directly for clients and supports safe formatting", async ({
   });
   await page.goto("/portal");
   await page.getByRole("tab", { name: "Messages" }).click();
+  await expect(
+    page.getByRole("complementary", { name: "Your conversations" }),
+  ).toBeVisible();
+  await page
+    .getByRole("complementary", { name: "Your conversations" })
+    .getByRole("button", { name: /Ataimo/ })
+    .click();
   await expect(
     page.getByRole("heading", { name: "Your engagements" }),
   ).not.toBeVisible();
@@ -157,6 +164,27 @@ test("chat opens directly for clients and supports safe formatting", async ({
   );
   await page.getByRole("button", { name: "Send message" }).click();
   expect(sent).toBe("Hello**text**");
+  const history = page.getByRole("log");
+  expect(
+    await history.evaluate((el) => getComputedStyle(el).overscrollBehaviorY),
+  ).toBe("auto");
+  expect(
+    await page
+      .getByLabel("Your message", { exact: true })
+      .evaluate((el) => getComputedStyle(el).overscrollBehaviorY),
+  ).toBe("auto");
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await history.scrollIntoViewIfNeeded();
+  await history.evaluate((el) => {
+    el.scrollTop = el.scrollHeight;
+  });
+  const box = await history.boundingBox();
+  const before = await page.evaluate(() => window.scrollY);
+  await page.mouse.move(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await page.mouse.wheel(0, 240);
+  await expect
+    .poll(() => page.evaluate(() => window.scrollY))
+    .toBeGreaterThan(before);
   await page.screenshot({
     path: `.impeccable/review/account-chat-${test.info().project.name}.png`,
     fullPage: true,
@@ -176,6 +204,13 @@ test("owner has a client conversation list, combined inbox, and protected user m
             email: "alex@example.invalid",
             enabled: true,
             status: "active",
+            phone: "+234 800 000 0000",
+            company: "Example Studio",
+            timezone: "Africa/Lagos",
+            username: "alex",
+            emailVerified: true,
+            linkedAccounts: ["google"],
+            createdAt: "2026-10-01T12:00:00Z",
           },
           sessions: [],
           events: [],
@@ -216,6 +251,15 @@ test("owner has a client conversation list, combined inbox, and protected user m
   await page
     .getByRole("button", { name: /Alex Morgan alex@example.invalid active/ })
     .click();
+  await expect(
+    page.getByRole("heading", { name: "Personal details", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator(".user-information")).toContainText(
+    "Example Studio",
+  );
+  await expect(page.locator(".user-information")).toContainText(
+    "+234 800 000 0000",
+  );
   await expect(
     page.getByRole("button", { name: "Disable account" }),
   ).toBeVisible();
@@ -277,4 +321,43 @@ test("mobile workspace tabs stay at the bottom and desktop tabs stay in flow", a
     path: `.impeccable/review/account-settings-${info.project.name}.png`,
     fullPage: true,
   });
+});
+
+test("new clients start a conversation only after choosing Ataimo", async ({
+  page,
+}) => {
+  await fixture(page);
+  let created = false;
+  await page.route("**/api/portal/conversations", (route) => {
+    if (route.request().method() === "POST") {
+      created = true;
+      return route.fulfill({ json: { id: thread } });
+    }
+    return route.fulfill({
+      json: {
+        conversations: created
+          ? [
+              {
+                id: thread,
+                client_id: clientId,
+                name: "Alex Morgan",
+                preview: "",
+              },
+            ]
+          : [],
+      },
+    });
+  });
+  await page.goto("/portal");
+  await page.getByRole("tab", { name: "Messages", exact: true }).click();
+  expect(created).toBe(false);
+  await expect(
+    page.getByLabel("Your message", { exact: true }),
+  ).not.toBeVisible();
+  await page
+    .getByRole("complementary", { name: "Your conversations" })
+    .getByRole("button", { name: /Ataimo/ })
+    .click();
+  await expect(page.getByLabel("Your message", { exact: true })).toBeVisible();
+  expect(created).toBe(true);
 });

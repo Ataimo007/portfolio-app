@@ -9,7 +9,17 @@ type Person = {
   status: string;
 };
 type Details = {
-  user: Person;
+  user: Person & {
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    company?: string;
+    timezone?: string;
+    createdAt?: string;
+    emailVerified?: boolean;
+    linkedAccounts?: string[];
+  };
   sessions: { ip: string; lastAccess: number }[];
   events: { type: string; time: number; ip?: string }[];
   jobs: { id: string; title: string; status: string }[];
@@ -199,6 +209,53 @@ export default function UserManagement({
               {selected.user.email} · {selected.user.status}
             </p>
           </header>
+          <section
+            className="user-information"
+            aria-labelledby="user-information-heading"
+          >
+            <h3 id="user-information-heading">Personal details</h3>
+            <dl>
+              {[
+                ["Full name", selected.user.name],
+                ["Email address", selected.user.email],
+                ["Phone number", selected.user.phone],
+                ["Company", selected.user.company],
+                ["Time zone", selected.user.timezone],
+                ["Username", selected.user.username],
+                ["Account status", selected.user.status],
+                [
+                  "Sign-in access",
+                  selected.user.enabled ? "Enabled" : "Disabled",
+                ],
+                [
+                  "Email verified",
+                  selected.user.emailVerified === undefined
+                    ? "Not available"
+                    : selected.user.emailVerified
+                      ? "Yes"
+                      : "No",
+                ],
+                [
+                  "Joined",
+                  selected.user.createdAt
+                    ? new Date(selected.user.createdAt).toLocaleDateString(
+                        undefined,
+                        { dateStyle: "medium" },
+                      )
+                    : "",
+                ],
+                [
+                  "Linked sign-in methods",
+                  selected.user.linkedAccounts?.join(", "),
+                ],
+              ].map(([name, value]) => (
+                <div key={name}>
+                  <dt>{name}</dt>
+                  <dd>{value || "Not provided"}</dd>
+                </div>
+              ))}
+            </dl>
+          </section>
           <div className="portal-job-actions">
             <button
               className="button primary"

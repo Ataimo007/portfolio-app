@@ -24,7 +24,7 @@ async function record(identityId: string) {
     throw new PortalError(404, "User not found.");
   const issuer = process.env.KEYCLOAK_ISSUER!;
   const found = await database().query(
-    "INSERT INTO client_profiles(issuer,subject,display_name,email) VALUES($1,$2,$3,$4) ON CONFLICT(issuer,subject) DO UPDATE SET issuer=excluded.issuer RETURNING id,account_status",
+    "INSERT INTO client_profiles(issuer,subject,display_name,email) VALUES($1,$2,$3,$4) ON CONFLICT(issuer,subject) DO UPDATE SET issuer=excluded.issuer RETURNING id,account_status,company,phone,timezone,created_at",
     [
       issuer,
       identityId,
@@ -70,6 +70,21 @@ export async function GET(request: Request) {
           email: person.email,
           enabled: person.enabled,
           status: profile.account_status,
+          username: person.username,
+          firstName: person.firstName || "",
+          lastName: person.lastName || "",
+          phone: profile.phone,
+          company: profile.company,
+          timezone: profile.timezone,
+          createdAt: person.createdTimestamp
+            ? new Date(person.createdTimestamp).toISOString()
+            : profile.created_at,
+          emailVerified: person.emailVerified,
+          linkedAccounts: (
+            await kc<{ identityProvider: string }[]>(
+              `/users/${person.id}/federated-identity`,
+            )
+          ).map((a) => a.identityProvider),
         },
         sessions: sessions.map((s) => ({
           ip: s.ipAddress,

@@ -114,10 +114,9 @@ export default function OwnerMail() {
     }
   }
   return (
-    <section className="workspace-panel">
+    <section className="workspace-panel owner-mail">
       <div className="portal-section-heading">
         <div>
-          <p className="eyebrow">Owner only</p>
           <h2>
             <Mail size={24} />
             Your mailbox
@@ -136,12 +135,35 @@ export default function OwnerMail() {
           Refresh
         </button>
       </div>
-      <div className="portal-filters">
+      <nav
+        className="mailbox-tabs"
+        role="tablist"
+        aria-label="Mailbox folders"
+        onKeyDown={(event) => {
+          if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key))
+            return;
+          event.preventDefault();
+          const next =
+            event.key === "Home"
+              ? "inbox"
+              : event.key === "End"
+                ? "sent"
+                : folder === "inbox"
+                  ? "sent"
+                  : "inbox";
+          setFolder(next);
+          setSelected(null);
+          document.getElementById("mail-tab-" + next)?.focus();
+        }}
+      >
         {["inbox", "sent"].map((view) => (
           <button
-            className="portal-filter"
+            id={"mail-tab-" + view}
+            role="tab"
+            tabIndex={folder === view ? 0 : -1}
+            aria-controls="mailbox-panel"
             key={view}
-            aria-pressed={folder === view}
+            aria-selected={folder === view}
             onClick={() => {
               setFolder(view);
               setSelected(null);
@@ -150,7 +172,7 @@ export default function OwnerMail() {
             {view === "inbox" ? "Inbox" : "Sent"}
           </button>
         ))}
-      </div>
+      </nav>
       {error && (
         <p className="portal-error" role="alert">
           {error}
@@ -161,7 +183,13 @@ export default function OwnerMail() {
           {notice}
         </p>
       )}
-      <div className="workspace-mail-grid">
+      <div
+        id="mailbox-panel"
+        className="workspace-mail-grid"
+        role="tabpanel"
+        aria-labelledby={"mail-tab-" + folder}
+        tabIndex={0}
+      >
         <div className="workspace-mail-list" aria-label="Email messages">
           {loading && <p role="status">Loading mail…</p>}
           {!loading && !messages.length && !error && (
