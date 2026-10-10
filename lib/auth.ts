@@ -95,7 +95,7 @@ export async function session(): Promise<Session | null> {
   const token = (await cookies()).get(sessionCookie)?.value;
   if (!token || token.length > 128) return null;
   const result = await database().query(
-    "SELECT p.id,p.display_name,p.email,p.timezone,p.company,p.phone,s.roles FROM portal_sessions s JOIN client_profiles p ON p.id=s.client_id WHERE s.token_hash=$1 AND s.expires_at>now()",
+    "SELECT p.id,p.display_name,p.email,p.timezone,p.company,p.phone,s.roles FROM portal_sessions s JOIN client_profiles p ON p.id=s.client_id WHERE s.token_hash=$1 AND s.expires_at>now() AND p.account_status='active'",
     [tokenHash(token)],
   );
   if (!result.rowCount) return null;
@@ -153,6 +153,15 @@ export async function createSession(claims: oidc.IDToken, rawToken: string) {
         : "Client";
   const email = typeof claims.email === "string" ? claims.email : "";
   return transaction(async (client) => {
+    const existing = await client.query(
+      "SELECT account_status FROM client_profiles WHERE issuer=$1 AND subject=$2 FOR UPDATE",
+      [claims.iss, claims.sub],
+    );
+    if (existing.rowCount && existing.rows[0].account_status !== "active")
+      throw new PortalError(
+        403,
+        "This account is closed or disabled. Contact Ataimo for assistance.",
+      );
     const row = await client.query(
       "INSERT INTO client_profiles(issuer,subject,display_name,email) VALUES($1,$2,$3,$4) ON CONFLICT(issuer,subject) DO UPDATE SET display_name=excluded.display_name,email=excluded.email RETURNING id,(xmax=0) AS is_new",
       [claims.iss, claims.sub, name.slice(0, 200), email.slice(0, 254)],
@@ -173,20 +182,18 @@ export async function createSession(claims: oidc.IDToken, rawToken: string) {
       Math.min(1800, Number(claims.exp) - Math.floor(Date.now() / 1000)),
     );
     await client.query(
-      "INSERT INTO portal_sessions(token_hash,client_id,roles,id_token,expires_at) VALUES($1,$2,$3,$4,now()+$5*interval '1 second')",
+      "INSERT INTO portal_sessions(token_hash,client_id,roles,id_token,expires_at,identity_session_id) VALUES($1,$2,$3,$4,now()+$5*interval '1 second',$6)",
       [
         tokenHash(token),
         row.rows[0].id,
         JSON.stringify(roles),
         await seal({ idToken: rawToken }, 1800),
         seconds,
+        typeof claims.sid === "string" ? claims.sid : null,
       ],
     );
     const clientId = row.rows[0].id;
-    if (row.rows[0].is_new)
-      await queueEmail(client, email, "welcome", "welcome:" + clientId, {
-        name,
-      });
+    await queueEmail(client, email, "welcome", "welcome:" + clientId, { name });
     await ownerAlert(client, "account.login", "login:" + tokenHash(token), {
       name,
       email,

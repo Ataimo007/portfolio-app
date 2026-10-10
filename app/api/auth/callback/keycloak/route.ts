@@ -38,12 +38,19 @@ export async function GET(request: Request) {
     );
     const claims = tokens.claims();
     if (!claims || !tokens.id_token) throw Error("Missing identity claims");
+    if (flow.linkingSubject && claims.sub !== flow.linkingSubject)
+      throw Error("Account linking changed identity");
     const created = await createSession(claims, tokens.id_token);
     jar.set(sessionCookie, created.token, {
       ...cookieOptions(),
       maxAge: created.seconds,
     });
-    return NextResponse.redirect(new URL("/portal", siteURL()));
+    return NextResponse.redirect(
+      new URL(
+        flow.returnTo === "/portal?view=accounts" ? flow.returnTo : "/portal",
+        siteURL(),
+      ),
+    );
   } catch {
     return NextResponse.redirect(new URL("/portal?auth=failed", siteURL()));
   }

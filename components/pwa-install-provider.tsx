@@ -28,7 +28,14 @@ export default function PwaInstallProvider({
     [installed, setInstalled] = useState(false);
   useEffect(() => {
     const media = matchMedia("(display-mode: standalone)");
-    const update = () => setInstalled(media.matches);
+    const update = () =>
+      setInstalled(
+        media.matches ||
+          matchMedia("(display-mode: fullscreen)").matches ||
+          Boolean(
+            (navigator as Navigator & { standalone?: boolean }).standalone,
+          ),
+      );
     const initial = setTimeout(update, 0);
     const ready = (event: Event) => {
       event.preventDefault();

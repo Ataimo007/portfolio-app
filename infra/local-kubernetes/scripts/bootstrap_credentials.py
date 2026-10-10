@@ -37,6 +37,7 @@ portal = existing("app", "portal-credentials") or {}
 portal.update({"PGHOST": "postgres.database.svc.cluster.local", "PGDATABASE": "portfolio", "PGUSER": "portal", "PGPASSWORD": postgres["portal-password"]})
 portal.setdefault("SESSION_SECRET", secrets.token_urlsafe(48))
 portal.setdefault("KEYCLOAK_CLIENT_SECRET", secrets.token_urlsafe(36))
+portal.setdefault("KEYCLOAK_ACCOUNT_CLIENT_SECRET", secrets.token_urlsafe(36))
 for namespace, name, values in [
     ("database", "postgres-credentials", postgres),
     ("identity", "keycloak-credentials", identity),

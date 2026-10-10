@@ -25,6 +25,18 @@ test("profile groups account settings and saves contact and timezone preferences
   await page.route("**/api/portal/conversations", (r) =>
     r.fulfill({ json: { conversations: [] } }),
   );
+  await page.route("**/api/auth/account", (r) =>
+    r.fulfill({
+      json: {
+        firstName: "Alex",
+        lastName: "Morgan",
+        hasPassword: true,
+        sessions: [],
+        linked: [],
+        providers: ["google", "github"],
+      },
+    }),
+  );
   let fail = false;
   await page.route("**/api/portal/actions", (r) => {
     if (fail)
@@ -42,13 +54,13 @@ test("profile groups account settings and saves contact and timezone preferences
     return r.fulfill({ json: { message: "Profile updated." } });
   });
   await page.goto("/portal");
-  await page.getByRole("button", { name: "profile", exact: true }).click();
+  await page.getByRole("tab", { name: "Accounts", exact: true }).click();
   await expect(
-    page.getByRole("heading", { name: "Your profile." }),
+    page.getByRole("heading", { name: "Your account." }),
   ).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Manage account" }),
-  ).toHaveAttribute("href", "/api/auth/account");
+  await expect(page.getByRole("link", { name: "Manage account" })).toHaveCount(
+    0,
+  );
   await page.getByLabel("Company or organization").fill("Example Studio");
   await page.getByLabel("Phone number").fill("+234 816 0594 893");
   await page
@@ -76,7 +88,7 @@ test("profile groups account settings and saves contact and timezone preferences
     ),
   ).toBe(true);
   await page
-    .getByRole("heading", { name: "Your profile." })
+    .getByRole("heading", { name: "Your account." })
     .scrollIntoViewIfNeeded();
   await page.screenshot({
     path: `.impeccable/review/profile-${test.info().project.name}.png`,

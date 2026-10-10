@@ -29,9 +29,12 @@ if not base:
     base = "http://127.0.0.1:" + match.group(1)
 
 import urllib.parse
-request = urllib.request.Request(base + "/realms/master/protocol/openid-connect/token", data=urllib.parse.urlencode({"client_id": "admin-cli", "grant_type": "password", "username": "admin", "password": password}).encode())
-with urllib.request.urlopen(request, timeout=15) as response:
-    token = json.load(response)["access_token"]
+import urllib.error
+def fresh_admin_token():
+    request = urllib.request.Request(base + "/realms/master/protocol/openid-connect/token", data=urllib.parse.urlencode({"client_id": "admin-cli", "grant_type": "password", "username": "admin", "password": password}).encode())
+    with urllib.request.urlopen(request, timeout=15) as response:
+        return json.load(response)["access_token"]
+token = fresh_admin_token()
 headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
 url = base + "/admin/realms/ataimo/clients?clientId=portfolio"
 with urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=15) as response:
@@ -60,10 +63,16 @@ print("Existing portfolio realm client updated to gateway hostname; other realm 
 
 realm_url = base + '/admin/realms/ataimo'
 def admin_call(path='', method='GET', data=None):
-    req = urllib.request.Request(realm_url + path, headers=headers, method=method, data=json.dumps(data).encode() if data is not None else None)
-    with urllib.request.urlopen(req, timeout=15) as response:
-        content = response.read()
-        return json.loads(content) if content else None
+    for attempt in range(2):
+        req = urllib.request.Request(realm_url + path, headers=headers, method=method, data=json.dumps(data).encode() if data is not None else None)
+        try:
+            with urllib.request.urlopen(req, timeout=15) as response:
+                content = response.read()
+                return json.loads(content) if content else None
+        except urllib.error.HTTPError as error:
+            if error.code != 401 or attempt:
+                raise
+            headers['Authorization'] = 'Bearer ' + fresh_admin_token()
 
 realm = admin_call()
 realm.update({
@@ -118,7 +127,7 @@ if social_raw:
         if not client_id or not client_secret:
             raise RuntimeError(label + ' requires both client ID and secret')
         provider = existing.get(alias, {})
-        provider.update({'alias': alias, 'providerId': provider_id, 'displayName': label, 'enabled': True, 'trustEmail': False, 'storeToken': False, 'firstBrokerLoginFlowAlias': 'first broker login'})
+        provider.update({'alias': alias, 'providerId': provider_id, 'displayName': label, 'enabled': True, 'trustEmail': True, 'storeToken': False, 'firstBrokerLoginFlowAlias': 'first broker login'})
         provider.setdefault('config', {}).update({'clientId': client_id, 'clientSecret': client_secret, 'defaultScope': scopes, 'syncMode': 'IMPORT'})
         if alias == 'microsoft':
             provider['config']['tenantId'] = values.get('MICROSOFT_TENANT_ID', 'common')
@@ -127,3 +136,23 @@ if social_raw:
         print(label + ' social provider synchronized')
 else:
     print('Social OAuth credentials not configured; unavailable providers stay disabled')
+
+# Backend-only account client; no browser grants or realm administrator role.
+account_clients = admin_call('/clients?clientId=portfolio-account-api')
+account_client = account_clients[0] if account_clients else {'clientId': 'portfolio-account-api'}
+account_client.update({'publicClient': False, 'clientAuthenticatorType': 'client-secret',
+    'secret': base64.b64decode(portal['data']['KEYCLOAK_ACCOUNT_CLIENT_SECRET']).decode(),
+    'serviceAccountsEnabled': True, 'standardFlowEnabled': False,
+    'directAccessGrantsEnabled': False, 'fullScopeAllowed': True})
+admin_call('/clients' + ('/' + account_client['id'] if account_clients else ''),
+    'PUT' if account_clients else 'POST', account_client)
+account_client = admin_call('/clients?clientId=portfolio-account-api')[0]
+service_user = admin_call('/clients/' + account_client['id'] + '/service-account-user')
+management = admin_call('/clients?clientId=realm-management')[0]
+roles = [admin_call('/clients/' + management['id'] + '/roles/' + name)
+    for name in ['manage-users', 'view-users', 'query-users', 'view-realm', 'view-events', 'view-identity-providers']]
+admin_call('/users/' + service_user['id'] + '/role-mappings/clients/' + management['id'], 'POST', roles)
+realm['eventsEnabled'] = True
+realm['eventsExpiration'] = 604800
+admin_call(method='PUT', data=realm)
+print('Backend account API enabled with user-management permissions; sign-in events retained for seven days')

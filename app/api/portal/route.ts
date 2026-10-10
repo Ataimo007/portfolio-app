@@ -7,7 +7,7 @@ export async function GET() {
     const user = await requireSession();
     const [jobs, slots, notifications] = await Promise.all([
       database().query(
-        `SELECT j.id,j.title,j.description,j.status,j.created_at,j.updated_at,p.display_name AS client_name,
+        `SELECT j.id,j.client_id,j.title,j.description,j.status,j.created_at,j.updated_at,p.display_name AS client_name,
  coalesce((SELECT jsonb_agg(t ORDER BY t.created_at) FROM job_tasks t WHERE t.job_id=j.id),'[]'::jsonb) AS tasks,
  coalesce((SELECT jsonb_agg(h ORDER BY h.created_at) FROM job_history h WHERE h.job_id=j.id),'[]'::jsonb) AS history,
  b.id AS booking_id,b.status AS booking_status,b.starts_at,b.ends_at FROM consultancy_jobs j

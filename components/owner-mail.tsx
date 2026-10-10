@@ -62,6 +62,11 @@ export default function OwnerMail() {
       clearInterval(timer);
     };
   }, [refresh]);
+  useEffect(() => {
+    if (!notice) return;
+    const timer = setTimeout(() => setNotice(""), 5000);
+    return () => clearTimeout(timer);
+  }, [notice]);
   async function open(email: Email) {
     setBusy(true);
     setError("");

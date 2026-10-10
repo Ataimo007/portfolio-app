@@ -7,6 +7,7 @@ export default function PublicInstall() {
   const [busy, setBusy] = useState(false),
     [status, setStatus] = useState(""),
     [error, setError] = useState("");
+  if (installed) return null;
   return (
     <section className="workspace-panel public-install">
       <p className="eyebrow">Available to everyone</p>

@@ -6,6 +6,8 @@ export KUBECONFIG="${KUBECONFIG:-/etc/rancher/k3s/k3s.yaml}"
 : "${WORKER_IMAGE:?Supply immutable worker registry image}"
 kubectl get nodes -l ataimo.com/environment=azure -o name | grep -q .
 kubectl get secret portal-credentials -n app >/dev/null
+python3 "$ROOT/infra/local-kubernetes/scripts/bootstrap_credentials.py"
+SITE_URL=https://ataimo.com python3 "$ROOT/infra/local-kubernetes/scripts/sync-keycloak.py"
 PULL_VALUES=()
 if [ -f "$ROOT/infra/azure/.local/registry-values.json" ]; then
   PULL_VALUES=(-f "$ROOT/infra/azure/.local/registry-values.json")

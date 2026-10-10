@@ -16,6 +16,7 @@ function data(owner = false) {
     jobs: [
       {
         id,
+        client_id: id,
         title: "API architecture review",
         description:
           "A controlled consultation fixture for responsive verification.",
@@ -45,7 +46,28 @@ test("client and owner workspaces preserve mobile layout and private states", as
     route.fulfill({ json: data(owner) }),
   );
   await page.route("**/api/portal/conversations", (route) =>
-    route.fulfill({ json: { conversations: [] } }),
+    route.fulfill({
+      json: {
+        conversations: [
+          { id, client_id: id, name: "Test Client", preview: "Hello Ataimo" },
+        ],
+      },
+    }),
+  );
+  await page.route("**/api/portal/conversations/" + id + "?*", (route) =>
+    route.fulfill({ json: { messages: [] } }),
+  );
+  await page.route("**/api/auth/account", (route) =>
+    route.fulfill({
+      json: {
+        firstName: "Test",
+        lastName: "Client",
+        hasPassword: false,
+        sessions: [],
+        linked: [],
+        providers: [],
+      },
+    }),
   );
   await page.route("**/api/portal/mail?*", (route) =>
     route.fulfill({
@@ -70,17 +92,18 @@ test("client and owner workspaces preserve mobile layout and private states", as
   await expect(
     page.getByRole("button", { name: "Mailbox", exact: true }),
   ).toHaveCount(0);
-  await page.getByRole("button", { name: /^profile$/i }).click();
+  await page.getByRole("tab", { name: "Accounts" }).click();
   await expect(page.getByLabel("Company or organization")).toHaveValue(
     "Example",
   );
   await expect(
     page.getByRole("button", { name: "Enable notifications" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: /^messages$/i }).click();
+  await page.getByRole("tab", { name: "Messages" }).click();
   await expect(
     page.getByRole("button", { name: "Message Ataimo" }),
-  ).toBeVisible();
+  ).toHaveCount(0);
+  await expect(page.getByLabel("Your message", { exact: true })).toBeVisible();
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= innerWidth,
@@ -94,7 +117,8 @@ test("client and owner workspaces preserve mobile layout and private states", as
   await expect(
     page.getByRole("button", { name: "Start engagement" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Mailbox", exact: true }).click();
+  await page.getByRole("tab", { name: "Messages" }).click();
+  await page.getByLabel("Message channel").selectOption("mail");
   await expect(
     page.getByRole("heading", { name: "Your mailbox" }),
   ).toBeVisible();

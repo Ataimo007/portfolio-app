@@ -1,3 +1,4 @@
+import InstallLink from "@/components/install-link";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Mail, Phone } from "lucide-react";
@@ -13,8 +14,7 @@ const JetBrainsMono = localFont({
   variable: "--font-geist-mono",
   display: "swap",
 });
-import { Analytics } from "@vercel/analytics/react";
-import { SpeedInsights } from "@vercel/speed-insights/next";
+import SiteAnalytics from "@/components/site-analytics";
 import PwaInstallProvider from "@/components/pwa-install-provider";
 import PwaRegistration from "@/components/pwa-registration";
 import Navigation from "@/components/navigation";
@@ -101,7 +101,7 @@ export default function RootLayout({
               className="footer-legal"
               aria-label="Legal and platform information"
             >
-              <Link href="/install">Install app</Link>
+              <InstallLink />
               <Link href="/status">Platform status</Link>
               <Link href="/privacy">Privacy</Link>
               <Link href="/terms">Terms</Link>
@@ -123,8 +123,7 @@ export default function RootLayout({
           />
           {process.env.VERCEL && (
             <>
-              <Analytics />
-              <SpeedInsights />
+              <SiteAnalytics />
             </>
           )}
         </PwaInstallProvider>

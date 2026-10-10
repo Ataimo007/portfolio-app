@@ -25,6 +25,11 @@ export default function WorkspaceDevice() {
         })
         .catch(() => {});
   }, []);
+  useEffect(() => {
+    if (!status) return;
+    const timer = setTimeout(() => setStatus(""), 6000);
+    return () => clearTimeout(timer);
+  }, [status]);
   async function notifications() {
     setBusy(true);
     setError("");
@@ -104,7 +109,9 @@ export default function WorkspaceDevice() {
       <p className="eyebrow">On your phone</p>
       <h2>Your workspace, within reach.</h2>
       <p>
-        Install Ataimo for quick access to consultations and conversations.
+        {installed
+          ? "Manage notifications on this device."
+          : "Install Ataimo for quick access to consultations and conversations."}
         Notifications contain no private message content.
       </p>
       <div className="portal-job-actions">

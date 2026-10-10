@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import NotificationCenter from "./notification-center";
+import { usePwaInstall } from "./pwa-install-provider";
 import { useScrollHeader } from "@/hooks/use-scroll-header";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -15,6 +16,7 @@ const portfolio = [
 ];
 export default function Navigation() {
   const path = usePathname();
+  const { installed } = usePwaInstall();
   useScrollHeader(path);
   const [mobileOpen, setMobileOpen] = useState(false);
   const toggle = useRef<HTMLButtonElement>(null);
@@ -143,7 +145,7 @@ export default function Navigation() {
           Contact Me
         </Link>
         <a
-          href={account === "anonymous" ? "/login" : "/portal"}
+          href={account === "anonymous" ? "/login" : "/portal?view=accounts"}
           aria-current={current(account === "anonymous" ? "/login" : "/portal")}
           aria-busy={account === "loading" || undefined}
           title={
@@ -153,18 +155,29 @@ export default function Navigation() {
           }
         >
           {account === "authenticated"
-            ? "Profile"
+            ? "Accounts"
             : account === "anonymous"
               ? "Login"
               : "Account"}
         </a>
-        <div className="mobile-install-link">
-          <Link href="/install">
-            <Download size={18} aria-hidden="true" />
-            Install app
-          </Link>
-          <span>No account needed</span>
-        </div>
+        {account === "authenticated" && (
+          <form
+            action="/api/auth/logout"
+            method="post"
+            className="navigation-signout"
+          >
+            <button type="submit">Log out</button>
+          </form>
+        )}
+        {!installed && (
+          <div className="mobile-install-link">
+            <Link href="/install">
+              <Download size={18} aria-hidden="true" />
+              Install app
+            </Link>
+            <span>No account needed</span>
+          </div>
+        )}
       </nav>
       {account === "authenticated" && <NotificationCenter />}
       <noscript>

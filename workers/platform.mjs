@@ -417,6 +417,9 @@ async function main() {
       );
       await db.query("DELETE FROM portal_sessions WHERE expires_at<now()");
       await db.query("DELETE FROM api_rate_limits WHERE expires_at<now()");
+      await db.query(
+        "DELETE FROM account_challenges WHERE expires_at<now()-interval '7 days'",
+      );
       lastTick = Date.now();
     } catch {
       console.error("Worker iteration deferred");

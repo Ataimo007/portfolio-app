@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowUpRight, Globe2, LockKeyhole, UserRound } from "lucide-react";
+import { ArrowUpRight, Globe2, UserRound } from "lucide-react";
 import WorkspaceDevice from "./workspace-device";
+import AccountSecurity from "./account-security";
 
 type Profile = {
   name: string;
@@ -18,10 +19,12 @@ export default function ProfileSettings({
   busy,
   readOnly,
   onSave,
+  onUpdated,
 }: {
   user: Profile;
   busy: boolean;
   readOnly: boolean;
+  onUpdated: () => void;
   onSave: (values: {
     company: string;
     phone: string;
@@ -39,7 +42,7 @@ export default function ProfileSettings({
     <section className="profile-settings" aria-labelledby="profile-heading">
       <header className="profile-heading">
         <div>
-          <h2 id="profile-heading">Your profile.</h2>
+          <h2 id="profile-heading">Your account.</h2>
           <p>A few details that make working together easier.</p>
         </div>
         {user.isOwner && (
@@ -70,7 +73,7 @@ export default function ProfileSettings({
             className="workspace-panel profile-details"
             aria-labelledby="profile-details-heading"
           >
-            <h3 id="profile-details-heading">Personal details</h3>
+            <h3 id="profile-details-heading">Contact & scheduling</h3>
             <p>
               Keep your contact details and scheduling preferences up to date.
             </p>
@@ -159,27 +162,11 @@ export default function ProfileSettings({
               </div>
             </form>
           </section>
-          <section
-            className="profile-security"
-            aria-labelledby="profile-security-heading"
-          >
-            <LockKeyhole size={24} aria-hidden="true" />
-            <div>
-              <h3 id="profile-security-heading">Sign-in & security</h3>
-              <p>
-                Manage your name, sign-in details, password and active sessions
-                securely.
-              </p>
-              <a className="button" href="/api/auth/account">
-                Manage account <ArrowUpRight size={16} aria-hidden="true" />
-              </a>
-              <p className="profile-security-note">
-                Password recovery uses an email verification link. If you sign
-                in with Google, GitHub, LinkedIn or Microsoft, manage your
-                password with that provider.
-              </p>
-            </div>
-          </section>
+          <AccountSecurity
+            readOnly={readOnly}
+            isOwner={user.isOwner}
+            onUpdated={onUpdated}
+          />
         </div>
         <aside
           className="profile-device"

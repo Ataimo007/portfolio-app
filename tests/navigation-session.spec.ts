@@ -22,8 +22,8 @@ test("navigation follows session changes without exposing identity data", async 
   await expect(page).toHaveURL(/\/contact$/);
   if (await mobile.isVisible()) await mobile.click();
   await expect(
-    navigation.getByRole("link", { name: "Profile", exact: true }),
-  ).toHaveAttribute("href", "/portal");
+    navigation.getByRole("link", { name: "Accounts", exact: true }),
+  ).toHaveAttribute("href", "/portal?view=accounts");
   authenticated = false;
   await page.evaluate(() => window.dispatchEvent(new Event("focus")));
   await expect(
@@ -46,7 +46,7 @@ test("unavailable session status keeps an account recovery link", async ({
   const account = page
     .getByRole("navigation", { name: "Main navigation" })
     .getByRole("link", { name: "Account", exact: true });
-  await expect(account).toHaveAttribute("href", "/portal");
+  await expect(account).toHaveAttribute("href", "/portal?view=accounts");
   await expect(account).toHaveAttribute("title", /temporarily unavailable/);
   await expect(account).not.toHaveAttribute("aria-busy", "true");
 });

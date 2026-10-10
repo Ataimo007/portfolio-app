@@ -143,5 +143,8 @@ test("installation prompt is captured before visiting the public installation pa
   await page.evaluate(() => window.dispatchEvent(new Event("appinstalled")));
   await expect(
     page.getByRole("button", { name: "App installed", exact: true }),
-  ).toBeDisabled();
+  ).toHaveCount(0);
+  await expect(
+    page.getByRole("link", { name: "Install app", exact: true }),
+  ).toHaveCount(0);
 });

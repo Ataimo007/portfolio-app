@@ -5,7 +5,7 @@ export async function GET() {
   return handle(async () => {
     const user = await requireSession();
     const result = await database().query(
-      "SELECT c.id,p.display_name AS name,(SELECT m.body FROM conversation_messages m WHERE m.conversation_id=c.id ORDER BY m.sequence DESC LIMIT 1) AS preview FROM conversations c JOIN client_profiles p ON p.id=c.client_id WHERE $1::boolean OR c.client_id=$2 ORDER BY c.created_at DESC LIMIT 100",
+      "SELECT c.id,c.client_id,p.display_name AS name,(SELECT m.body FROM conversation_messages m WHERE m.conversation_id=c.id ORDER BY m.sequence DESC LIMIT 1) AS preview FROM conversations c JOIN client_profiles p ON p.id=c.client_id WHERE $1::boolean OR c.client_id=$2 ORDER BY coalesce((SELECT max(m.created_at) FROM conversation_messages m WHERE m.conversation_id=c.id),c.created_at) DESC LIMIT 100",
       [user.isOwner, user.clientId],
     );
     return json({ conversations: result.rows });
