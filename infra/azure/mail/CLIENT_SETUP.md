@@ -28,6 +28,14 @@ outgoing mail follow the selected account. Incoming-mail notifications watch
 both inboxes. Mailbox credentials stay server-side; clients cannot access
 this integration or submit arbitrary account names.
 
+Live verification on 12 October 2026: both accounts passed certificate-verified
+IMAP and SMTP authentication; owner-only API calls loaded each account's Inbox
+and Sent. Requests with client permissions or unknown account names were
+rejected. Chromium checks verified switching both ways at desktop 1440px and
+mobile 390px without horizontal overflow. Temporary owner/client-role test
+sessions were removed; no users were created and no emails were sent. Delivery
+workflow run 38217640699 completed successfully, including responsive tests.
+
 `hello@ataimo.com` and `contact@ataimo.com` deliver to `ataimo@ataimo.com`;
 `postmaster@ataimo.com` delivers to `admin@ataimo.com`. These aliases do not
 merge the two independent inboxes.
