@@ -21,6 +21,7 @@ type Email = {
 export default function OwnerMail() {
   const [folder, setFolder] = useState("inbox"),
     [messages, setMessages] = useState<Email[]>([]),
+    [mailboxAddress, setMailboxAddress] = useState(""),
     [selected, setSelected] = useState<Email | null>(null),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -41,6 +42,7 @@ export default function OwnerMail() {
         const data = await r.json();
         if (!r.ok) throw Error(data.error);
         setMessages(data.messages);
+        setMailboxAddress(data.mailbox || "");
         setError("");
       } catch (e) {
         if ((e as Error).name !== "AbortError") setError((e as Error).message);
@@ -122,8 +124,10 @@ export default function OwnerMail() {
             Your mailbox
           </h2>
           <p>
-            Connected to your existing mail account. Inbox updates every minute
-            while this page is open.
+            {mailboxAddress
+              ? `Connected to ${mailboxAddress}. `
+              : "Connecting to your mail account. "}
+            Inbox updates every minute while this page is open.
           </p>
         </div>
         <button

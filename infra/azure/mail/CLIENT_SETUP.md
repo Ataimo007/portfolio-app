@@ -20,6 +20,28 @@ Bootstrap passwords are saved privately in infra/azure/.local/mailbox-credential
 
 hello@ataimo.com and contact@ataimo.com are receiving aliases for ataimo@ataimo.com. postmaster@ataimo.com receives into admin@ataimo.com. Add the two actual mailbox accounts to clients; aliases have no separate passwords/inboxes. Outbound SMTP2GO relay happens behind the mail server, so clients do not need provider credentials.
 
+## Portfolio mailbox integration
+
+Verified against the Azure cluster on 12 October 2026: the portfolio app and
+its incoming-mail notification worker use `ataimo@ataimo.com` on
+`mail.ataimo.com`. This is a separate inbox from `admin@ataimo.com`.
+`hello@ataimo.com` and `contact@ataimo.com` are aliases delivering to
+`ataimo@ataimo.com`; `postmaster@ataimo.com` delivers to `admin@ataimo.com`.
+Signing into the portfolio as `admin@ataimo.com` does not select the admin
+mailbox: the owner-only integration uses its configured service credentials.
+
+Receiving uses IMAPS on port 993. Sending uses authenticated SMTP STARTTLS
+on port 587 through Mailu, which relays outbound delivery through SMTP2GO.
+The app saves a copy of successful outgoing messages in the IMAP Sent folder.
+SMTP2GO does not host or synchronize the inbox.
+
+To compare the same mail, sign into webmail or an IMAP client as
+`ataimo@ataimo.com` and open INBOX. The app currently shows the newest 50
+messages in Inbox or Sent, refreshing every minute while visible; it does
+not display Junk, Trash, Drafts, or a combined view of both accounts.
+The app now displays its connected mailbox address. No accounts, aliases,
+messages, or mailbox credentials were changed during this investigation.
+
 ## macOS Mail
 
 1. Open Mail and choose Mail → Add Account. Enter your mailbox email address. Choose Other Mail Account if the account-provider dialog is shown (on newer versions, choose from a list if needed).

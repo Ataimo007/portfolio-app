@@ -5,6 +5,10 @@ originally named Ataimo_Edem_Resume_2026_Updated.pdf. The public download is an
 exact copy at public/resume/ataimo-edem-resume.pdf; it is not reformatted. The owner-requested October 2026 edit removes Gmail
 from the contact headline and keeps the remaining contacts centered. All
 other rendered pixels, typography, page structure and content are preserved.
+The October 12 update changes only the headline email to `admin@ataimo.com`
+and its mailto hyperlink. Pixel comparison at twice the original resolution
+confirms that everything outside that headline row and the entire second page
+remain unchanged.
 
 Run `python3 scripts/resume/build.py` to republish the approved PDF.
 
