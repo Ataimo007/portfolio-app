@@ -69,22 +69,31 @@ test("client and owner workspaces preserve mobile layout and private states", as
       },
     }),
   );
-  await page.route("**/api/portal/mail?*", (route) =>
-    route.fulfill({
+  await page.route("**/api/portal/mail?*", (route) => {
+    const admin =
+      new URL(route.request().url()).searchParams.get("account") === "admin";
+    return route.fulfill({
       json: {
+        mailbox: admin ? "admin@ataimo.com" : "ataimo@ataimo.com",
+        accounts: [
+          { id: "ataimo", address: "ataimo@ataimo.com" },
+          { id: "admin", address: "admin@ataimo.com" },
+        ],
         messages: [
           {
             uid: 1,
             uidValidity: "1",
             from: "Verification",
-            subject: "Controlled mail fixture",
+            subject: admin
+              ? "Administrator mail fixture"
+              : "Controlled mail fixture",
             date: "2026-10-06T12:00:00Z",
             unread: true,
           },
         ],
       },
-    }),
-  );
+    });
+  });
   await page.goto("/portal");
   await expect(
     page.getByRole("heading", { name: "Your workspace", exact: true }),
@@ -130,6 +139,23 @@ test("client and owner workspaces preserve mobile layout and private states", as
     page.getByText("Controlled mail fixture", { exact: true }),
   ).toBeVisible();
   await expect(page.getByLabel("To", { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Mailbox", { exact: true })).toHaveValue(
+    "ataimo",
+  );
+  await page.getByLabel("Mailbox", { exact: true }).selectOption("admin");
+  await expect(
+    page.getByText("Administrator mail fixture", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Controlled mail fixture", { exact: true }),
+  ).toHaveCount(0);
+  await expect(
+    page.getByText("From: admin@ataimo.com", { exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("Mailbox", { exact: true }).selectOption("ataimo");
+  await expect(
+    page.getByText("Controlled mail fixture", { exact: true }),
+  ).toBeVisible();
   const folders = page.getByRole("tablist", { name: "Mailbox folders" });
   await expect(
     folders.getByRole("tab", { name: "Inbox", exact: true }),

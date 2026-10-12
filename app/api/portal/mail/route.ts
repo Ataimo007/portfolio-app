@@ -10,17 +10,27 @@ import {
   sameOrigin,
   PortalError,
 } from "@/lib/portal-http";
-import { readMail, deliverMail, mailAvailable } from "@/lib/mail";
+import {
+  readMail,
+  deliverMail,
+  mailAvailable,
+  mailAccounts,
+  mailAccount,
+} from "@/lib/mail";
 export const runtime = "nodejs";
 export async function GET(request: Request) {
   return handle(async () => {
     const user = await requireOwner();
     await limit("mail-read:" + user.clientId, 120);
     const params = new URL(request.url).searchParams;
+    const accountId = z
+      .enum(["ataimo", "admin"])
+      .parse(params.get("account") || "ataimo");
     const view = z
       .enum(["inbox", "sent"])
       .parse(params.get("folder") || "inbox");
-    if (params.get("status")) return json({ available: mailAvailable() });
+    if (params.get("status"))
+      return json({ available: mailAvailable(), accounts: mailAccounts() });
     const uid = params.has("uid")
       ? z.coerce
           .number()
@@ -29,7 +39,9 @@ export async function GET(request: Request) {
           .max(4294967295)
           .parse(params.get("uid"))
       : undefined;
-    return json(await readMail(view, uid, params.get("validity") || undefined));
+    return json(
+      await readMail(view, uid, params.get("validity") || undefined, accountId),
+    );
   });
 }
 export async function POST(request: Request) {
@@ -39,6 +51,7 @@ export async function POST(request: Request) {
     await limit("mail-send:" + user.clientId, 10, 3600);
     const input = z
       .object({
+        account: z.enum(["ataimo", "admin"]).default("ataimo"),
         nonce: z.string().uuid(),
         to: z.email().max(254),
         subject: z
@@ -50,9 +63,12 @@ export async function POST(request: Request) {
         text: z.string().trim().min(1).max(8000),
       })
       .parse(await body(request));
+    mailAccount(input.account);
     const id = `<${randomUUID()}@ataimo.com>`;
     const hash = createHash("sha256")
-      .update(JSON.stringify([input.to, input.subject, input.text]))
+      .update(
+        JSON.stringify([input.account, input.to, input.subject, input.text]),
+      )
       .digest("hex");
     const inserted = await database().query(
       "INSERT INTO mail_sends(id,client_id,message_id,payload_hash,status) VALUES($1,$2,$3,$4,'sending') ON CONFLICT DO NOTHING RETURNING id",
@@ -77,7 +93,13 @@ export async function POST(request: Request) {
       );
     }
     try {
-      const copied = await deliverMail(input.to, input.subject, input.text, id);
+      const copied = await deliverMail(
+        input.to,
+        input.subject,
+        input.text,
+        id,
+        input.account,
+      );
       await database().query(
         "UPDATE mail_sends SET status='sent',sent_copy=$2 WHERE id=$1",
         [input.nonce, copied],

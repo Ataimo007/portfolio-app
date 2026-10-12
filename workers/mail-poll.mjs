@@ -1,16 +1,24 @@
 import { ImapFlow } from "imapflow";
+import { configuredMailboxes } from "./mail-accounts.mjs";
 export async function pollMail(db) {
-  if (
-    !process.env.MAIL_HOST ||
-    !process.env.MAIL_USER ||
-    !process.env.MAIL_PASSWORD
-  )
-    return;
+  for (const account of configuredMailboxes()) {
+    try {
+      await pollMailbox(db, account);
+    } catch (error) {
+      console.error(
+        "Mailbox polling failed",
+        account.address,
+        error instanceof Error ? error.name : "Error",
+      );
+    }
+  }
+}
+async function pollMailbox(db, account) {
   const imap = new ImapFlow({
     host: process.env.MAIL_HOST,
     port: 993,
     secure: true,
-    auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASSWORD },
+    auth: { user: account.address, pass: account.password },
     logger: false,
     connectionTimeout: 5000,
     greetingTimeout: 5000,
@@ -29,7 +37,7 @@ export async function pollMail(db) {
         await client.query("BEGIN");
         const previous = await client.query(
           "SELECT * FROM mail_watch WHERE mailbox=$1 FOR UPDATE",
-          [process.env.MAIL_USER],
+          [account.address],
         );
         if (
           previous.rowCount &&
@@ -52,7 +60,7 @@ export async function pollMail(db) {
         }
         await client.query(
           "INSERT INTO mail_watch(mailbox,uid_validity,last_uid) VALUES($1,$2,$3) ON CONFLICT(mailbox) DO UPDATE SET uid_validity=excluded.uid_validity,last_uid=excluded.last_uid",
-          [process.env.MAIL_USER, validity, last],
+          [account.address, validity, last],
         );
         await client.query("COMMIT");
       } catch (error) {

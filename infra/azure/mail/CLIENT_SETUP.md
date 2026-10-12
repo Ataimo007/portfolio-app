@@ -22,25 +22,38 @@ hello@ataimo.com and contact@ataimo.com are receiving aliases for ataimo@ataimo.
 
 ## Portfolio mailbox integration
 
-Verified against the Azure cluster on 12 October 2026: the portfolio app and
-its incoming-mail notification worker use `ataimo@ataimo.com` on
-`mail.ataimo.com`. This is a separate inbox from `admin@ataimo.com`.
-`hello@ataimo.com` and `contact@ataimo.com` are aliases delivering to
-`ataimo@ataimo.com`; `postmaster@ataimo.com` delivers to `admin@ataimo.com`.
-Signing into the portfolio as `admin@ataimo.com` does not select the admin
-mailbox: the owner-only integration uses its configured service credentials.
+The portfolio owner account can select either `ataimo@ataimo.com` or
+`admin@ataimo.com` in Messages → Mailbox → Mailbox. Inbox, Sent, replies and
+outgoing mail follow the selected account. Incoming-mail notifications watch
+both inboxes. Mailbox credentials stay server-side; clients cannot access
+this integration or submit arbitrary account names.
+
+`hello@ataimo.com` and `contact@ataimo.com` deliver to `ataimo@ataimo.com`;
+`postmaster@ataimo.com` delivers to `admin@ataimo.com`. These aliases do not
+merge the two independent inboxes.
 
 Receiving uses IMAPS on port 993. Sending uses authenticated SMTP STARTTLS
 on port 587 through Mailu, which relays outbound delivery through SMTP2GO.
-The app saves a copy of successful outgoing messages in the IMAP Sent folder.
-SMTP2GO does not host or synchronize the inbox.
+Successful sends are copied to that account's Sent folder. The app shows the
+newest 50 messages per folder and refreshes every minute while visible.
 
-To compare the same mail, sign into webmail or an IMAP client as
-`ataimo@ataimo.com` and open INBOX. The app currently shows the newest 50
-messages in Inbox or Sent, refreshing every minute while visible; it does
-not display Junk, Trash, Drafts, or a combined view of both accounts.
-The app now displays its connected mailbox address. No accounts, aliases,
-messages, or mailbox credentials were changed during this investigation.
+### Certificate hostname mismatch in Gmail
+
+Use `mail.ataimo.com` as **both** incoming and outgoing server names, even
+when the email/username is `ataimo@ataimo.com` or `admin@ataimo.com`.
+Incoming: 993 with SSL/TLS. Outgoing: 465 with SSL/TLS or 587 with STARTTLS.
+Do not enter the email address, `ataimo.com`, the VM IP, or the Azure VM DNS
+name as the mail server. Select manual setup when automatic discovery picks
+another hostname. Certificate verification matches the server field, not
+the mailbox email address.
+
+The mail certificate is an explicit multi-name certificate for
+`mail.ataimo.com` and `webmail.ataimo.com`, not a wildcard. On 12 October
+2026 it verified on 993, 465 and 587, with expiry 3 January 2027 and scheduled
+cert-manager renewal 4 December 2026. The production issuer uses Azure DNS
+DNS-01, and Mailu's running certificate watcher reloads mounted Secret updates.
+No certificate bypass is needed. For browser access use
+https://webmail.ataimo.com/webmail/.
 
 ## macOS Mail
 

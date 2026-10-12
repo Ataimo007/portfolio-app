@@ -1,20 +1,27 @@
 import "server-only";
+import { configuredMailboxes } from "../workers/mail-accounts.mjs";
 import { ImapFlow } from "imapflow";
 import nodemailer from "nodemailer";
 import { simpleParser } from "mailparser";
 import { PortalError } from "./portal-http";
-export const mailAvailable = () =>
-  Boolean(
-    process.env.MAIL_HOST && process.env.MAIL_USER && process.env.MAIL_PASSWORD,
-  );
-export async function mailbox<T>(run: (client: ImapFlow) => Promise<T>) {
-  if (!mailAvailable())
-    throw new PortalError(503, "The owner mailbox is not configured yet.");
+export const mailAvailable = () => configuredMailboxes().length > 0;
+export const mailAccounts = () =>
+  configuredMailboxes().map(({ id, address }) => ({ id, address }));
+export function mailAccount(id = "ataimo") {
+  const account = configuredMailboxes().find((item) => item.id === id);
+  if (!account) throw new PortalError(400, "This mailbox is unavailable.");
+  return account;
+}
+export async function mailbox<T>(
+  run: (client: ImapFlow) => Promise<T>,
+  accountId = "ataimo",
+) {
+  const account = mailAccount(accountId);
   const client = new ImapFlow({
     host: process.env.MAIL_HOST!,
     port: 993,
     secure: true,
-    auth: { user: process.env.MAIL_USER!, pass: process.env.MAIL_PASSWORD! },
+    auth: { user: account.address, pass: account.password },
     logger: false,
     connectionTimeout: 8000,
     greetingTimeout: 8000,
@@ -36,7 +43,12 @@ export async function folder(client: ImapFlow, value: string) {
     await client.mailboxCreate("Sent");
   return "Sent";
 }
-export async function readMail(view: string, uid?: number, validity?: string) {
+export async function readMail(
+  view: string,
+  uid?: number,
+  validity?: string,
+  accountId = "ataimo",
+) {
   return mailbox(async (client) => {
     const path = await folder(client, view);
     const lock = await client.getMailboxLock(path);
@@ -119,24 +131,25 @@ export async function readMail(view: string, uid?: number, validity?: string) {
       return {
         messages: messages.reverse(),
         uidValidity,
-        mailbox: process.env.MAIL_USER,
+        mailbox: mailAccount(accountId).address,
+        accounts: mailAccounts(),
         total: state.exists,
       };
     } finally {
       lock.release();
     }
-  });
+  }, accountId);
 }
 export async function deliverMail(
   to: string,
   subject: string,
   text: string,
   messageId: string,
+  accountId = "ataimo",
 ) {
-  if (!mailAvailable())
-    throw new PortalError(503, "The owner mailbox is not configured yet.");
+  const account = mailAccount(accountId);
   const options = {
-    from: { name: "Ataimo Edem", address: process.env.MAIL_USER! },
+    from: { name: "Ataimo Edem", address: account.address },
     to,
     subject,
     text,
@@ -147,7 +160,7 @@ export async function deliverMail(
     port: 587,
     secure: false,
     requireTLS: true,
-    auth: { user: process.env.MAIL_USER, pass: process.env.MAIL_PASSWORD },
+    auth: { user: account.address, pass: account.password },
     connectionTimeout: 8000,
     greetingTimeout: 8000,
     socketTimeout: 15000,
@@ -172,7 +185,7 @@ export async function deliverMail(
         composed.message as Buffer,
         ["\\Seen"],
       );
-    });
+    }, accountId);
     copied = true;
   } catch {}
   return copied;

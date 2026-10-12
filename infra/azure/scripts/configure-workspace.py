@@ -23,6 +23,8 @@ mail=json.loads(mail_result.stdout) if mail_result.returncode==0 else None
 import base64
 password=base64.b64decode(mail['data']['ataimo-password']).decode() if mail else ''
 secret={'apiVersion':'v1','kind':'Secret','metadata':{'name':'portal-integrations','namespace':'app'},'type':'Opaque','stringData':{'VAPID_PUBLIC_KEY':keys['publicKey'],'VAPID_PRIVATE_KEY':keys['privateKey'],'MAIL_HOST':'mail.ataimo.com','MAIL_USER':'ataimo@ataimo.com','MAIL_PASSWORD':password}}
+if mail:
+ secret['stringData']['MAIL_ADMIN_PASSWORD']=base64.b64decode(mail['data']['admin-password']).decode()
 if not mail:
  for name in ('MAIL_HOST','MAIL_USER','MAIL_PASSWORD'): secret['stringData'].pop(name)
 command(['apply','-f','-'],json.dumps(secret))

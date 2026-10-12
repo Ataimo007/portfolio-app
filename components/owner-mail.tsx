@@ -19,9 +19,26 @@ type Email = {
   attachments?: { name: string; size: number }[];
 };
 export default function OwnerMail() {
+  const [account, setAccount] = useState("ataimo");
+  return (
+    <OwnerMailbox
+      key={account}
+      account={account}
+      onAccountChange={setAccount}
+    />
+  );
+}
+function OwnerMailbox({
+  account,
+  onAccountChange,
+}: {
+  account: string;
+  onAccountChange: (value: string) => void;
+}) {
   const [folder, setFolder] = useState("inbox"),
     [messages, setMessages] = useState<Email[]>([]),
     [mailboxAddress, setMailboxAddress] = useState(""),
+    [accounts, setAccounts] = useState<{ id: string; address: string }[]>([]),
     [selected, setSelected] = useState<Email | null>(null),
     [loading, setLoading] = useState(true),
     [busy, setBusy] = useState(false),
@@ -35,14 +52,18 @@ export default function OwnerMail() {
     async (signal?: AbortSignal) => {
       setLoading(true);
       try {
-        const r = await fetch(`/api/portal/mail?folder=${folder}`, {
-          cache: "no-store",
-          signal,
-        });
+        const r = await fetch(
+          `/api/portal/mail?account=${account}&folder=${folder}`,
+          {
+            cache: "no-store",
+            signal,
+          },
+        );
         const data = await r.json();
         if (!r.ok) throw Error(data.error);
         setMessages(data.messages);
         setMailboxAddress(data.mailbox || "");
+        setAccounts(data.accounts || []);
         setError("");
       } catch (e) {
         if ((e as Error).name !== "AbortError") setError((e as Error).message);
@@ -50,7 +71,7 @@ export default function OwnerMail() {
         if (!signal?.aborted) setLoading(false);
       }
     },
-    [folder],
+    [folder, account],
   );
   useEffect(() => {
     const controller = new AbortController();
@@ -74,7 +95,7 @@ export default function OwnerMail() {
     setError("");
     try {
       const r = await fetch(
-        `/api/portal/mail?folder=${folder}&uid=${email.uid}&validity=${email.uidValidity}`,
+        `/api/portal/mail?account=${account}&folder=${folder}&uid=${email.uid}&validity=${email.uidValidity}`,
         { cache: "no-store" },
       );
       const data = await r.json();
@@ -99,7 +120,13 @@ export default function OwnerMail() {
       const r = await fetch("/api/portal/mail", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nonce: nonce.current, to, subject, text }),
+        body: JSON.stringify({
+          account,
+          nonce: nonce.current,
+          to,
+          subject,
+          text,
+        }),
       });
       const value = await r.json();
       if (!r.ok) throw Error(value.error);
@@ -138,6 +165,32 @@ export default function OwnerMail() {
           <RefreshCw size={16} />
           Refresh
         </button>
+      </div>
+      <div className="portal-form mailbox-account-switch">
+        <label htmlFor="owner-mail-account">Mailbox</label>
+        <select
+          id="owner-mail-account"
+          value={account}
+          disabled={loading || busy || accounts.length < 2}
+          onChange={(event) => {
+            if (
+              (to || subject || text) &&
+              !window.confirm("Switch mailbox and discard this unsent draft?")
+            )
+              return;
+            onAccountChange(event.target.value);
+          }}
+        >
+          {accounts.length ? (
+            accounts.map((item) => (
+              <option key={item.id} value={item.id}>
+                {item.address}
+              </option>
+            ))
+          ) : (
+            <option value={account}>Loading mailboxes…</option>
+          )}
+        </select>
       </div>
       <nav
         className="mailbox-tabs"
@@ -258,6 +311,7 @@ export default function OwnerMail() {
           )}
           <form className="portal-form" onSubmit={send}>
             <h3>Write an email</h3>
+            <p className="portal-note">From: {mailboxAddress || "Loading…"}</p>
             <label htmlFor="mail-to">To</label>
             <input
               id="mail-to"
