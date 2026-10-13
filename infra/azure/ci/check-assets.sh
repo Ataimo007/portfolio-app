@@ -4,6 +4,7 @@ ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
 cd "$ROOT"
 for file in infra/azure/ci/*.sh infra/azure/scripts/deploy-stack.sh; do bash -n "$file"; done
 python3 -m unittest discover -s tests/infra -p 'test_*.py'
+python3 scripts/resume/verify.py
 helm lint infra/local-kubernetes/charts/service
 helm lint infra/local-kubernetes/charts/portal-jobs
 helm template portfolio infra/local-kubernetes/charts/service --set-string image=docker.io/example/portfolio:ci --set 'imagePullSecrets[0].name=dockerhub-pull' >/dev/null

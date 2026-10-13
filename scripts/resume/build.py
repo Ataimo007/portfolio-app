@@ -25,7 +25,7 @@ with tempfile.TemporaryDirectory(prefix='ataimo-resume-') as directory:
         raise SystemExit('Resume conversion produced no PDF')
     links = {
         'ataimo.com': 'https://ataimo.com',
-        'LinkedIn': 'https://www.linkedin.com/in/ataimo-edem-4780b8160/',
+        'LinkedIn': 'https://linkedin.com/in/ataimo-edem-4780b8160',
         'GitHub': 'https://github.com/Ataimo007',
         'contact@ataimo.com': 'mailto:contact@ataimo.com',
         'edemataimo@gmail.com': 'mailto:edemataimo@gmail.com',
