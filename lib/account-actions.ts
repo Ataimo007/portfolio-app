@@ -1,5 +1,6 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
+import { reserveIdentityMail } from "../workers/identity-mail-policy.mjs";
 import nodemailer from "nodemailer";
 import { database, transaction } from "./db";
 import { tokenHash } from "./auth";
@@ -32,6 +33,11 @@ export async function challenge(
       "Verification email is temporarily unavailable.",
     );
   const token = randomBytes(32).toString("base64url");
+  if (!(await reserveIdentityMail(database(), user.email)))
+    throw new PortalError(
+      429,
+      "Please wait before requesting another verification email.",
+    );
   await transaction(async (client) => {
     await client.query(
       "SELECT id FROM client_profiles WHERE id=$1 FOR UPDATE",

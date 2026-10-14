@@ -16,7 +16,7 @@ jobs:
       - run: npm ci
       - run: npx playwright install --with-deps chromium
       - run: npm run lint
-      - run: node tests/unit/email-delivery.mjs && node tests/unit/push-delivery.mjs && node tests/unit/mail-accounts.mjs
+      - run: node tests/unit/email-delivery.mjs && node tests/unit/push-delivery.mjs && node tests/unit/mail-accounts.mjs && node tests/unit/registration-protection.mjs
       - run: npm run typecheck
       - run: npm run build
       - run: npm test -- --workers=1

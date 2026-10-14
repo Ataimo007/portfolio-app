@@ -56,3 +56,7 @@ helm upgrade --install portal-jobs "$LOCAL/charts/portal-jobs" -n app --set-stri
 helm upgrade --install portfolio "$LOCAL/charts/service" -n app -f "$CLOUD/.local/values/app.json" --set-string image="$IMAGE" --set-string integrationSecret=portal-integrations "${PULL_VALUES[@]}" --wait --timeout 10m
 printf '%s\n' "$IMAGE" > "$CLOUD/.local/image"
 echo 'Workloads installed. Issue staging then production certificates with configure-tls.sh before publishing DNS.'
+
+if kubectl get secret portal-integrations -n app >/dev/null 2>&1; then
+  WORKER_IMAGE="$WORKER" bash "$CLOUD/scripts/configure-registration-protection.sh"
+fi

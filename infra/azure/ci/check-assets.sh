@@ -6,6 +6,7 @@ for file in infra/azure/ci/*.sh infra/azure/scripts/deploy-stack.sh; do bash -n 
 python3 -m unittest discover -s tests/infra -p 'test_*.py'
 python3 scripts/resume/verify.py
 helm lint infra/local-kubernetes/charts/service
+helm template keycloak infra/local-kubernetes/charts/service --set image=quay.io/keycloak/keycloak:26.8.0 --set identityMailGuard.enabled=true --set identityMailGuard.image=docker.io/example/worker:ci >/dev/null
 helm lint infra/local-kubernetes/charts/portal-jobs
 helm template portfolio infra/local-kubernetes/charts/service --set-string image=docker.io/example/portfolio:ci --set 'imagePullSecrets[0].name=dockerhub-pull' >/dev/null
 helm template portal-jobs infra/local-kubernetes/charts/portal-jobs --set-string image=docker.io/example/portfolio:ci --set-string workerImage=docker.io/example/worker:ci --set 'imagePullSecrets[0].name=dockerhub-pull' >/dev/null

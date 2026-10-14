@@ -383,7 +383,8 @@ async function snapshot() {
 async function main() {
   let nextConnect = 0,
     nextSnapshot = 0,
-    nextMail = 0;
+    nextMail = 0,
+    nextRetention = 0;
   while (!stopping) {
     try {
       if (!brokerReady && Date.now() > nextConnect) {
@@ -417,6 +418,18 @@ async function main() {
       );
       await db.query("DELETE FROM portal_sessions WHERE expires_at<now()");
       await db.query("DELETE FROM api_rate_limits WHERE expires_at<now()");
+      if (Date.now() > nextRetention) {
+        nextRetention = Date.now() + 60000;
+        await db.query(
+          "DELETE FROM registration_challenges WHERE expires_at<now()-interval '1 hour'",
+        );
+        await db.query(
+          "DELETE FROM registration_audit WHERE created_at<now()-interval '30 days'",
+        );
+        await db.query(
+          "DELETE FROM identity_mail_audit WHERE created_at<now()-interval '30 days'",
+        );
+      }
       await db.query(
         "DELETE FROM account_challenges WHERE expires_at<now()-interval '7 days'",
       );

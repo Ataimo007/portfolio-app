@@ -1480,3 +1480,8 @@
     transition: none;
   }
 }
+
+.portal-state[data-state="pending"] {
+  background: var(--color-tint-warm);
+  color: var(--color-accent-warm);
+}

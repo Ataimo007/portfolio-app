@@ -5,6 +5,8 @@ import { cookieOptions, identity, loginCookie, seal } from "@/lib/auth";
 import { siteURL } from "@/lib/portal-http";
 
 export async function GET(request: Request) {
+  if (new URL(request.url).searchParams.get("screen") === "signup")
+    return NextResponse.redirect(new URL("/signup", siteURL()));
   try {
     const issuer = new URL(process.env.KEYCLOAK_ISSUER!);
     const probe = new URL(
@@ -33,8 +35,6 @@ export async function GET(request: Request) {
       code_challenge: await oidc.calculatePKCECodeChallenge(verifier),
       code_challenge_method: "S256",
     });
-    if (new URL(request.url).searchParams.get("screen") === "signup")
-      url.pathname = url.pathname.replace(/\/auth$/, "/registrations");
     return NextResponse.redirect(url);
   } catch {
     return NextResponse.redirect(

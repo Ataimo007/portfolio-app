@@ -265,6 +265,7 @@
         </#if>
 
           <div class="${properties.kcLoginMainFooter!}">
+              <#if pageId == "login"><div class="ataimo-protected-signup"><a href="${properties.portfolioUrl}/signup">Create an account</a> · <a href="${properties.portfolioUrl}/signup?mode=resend">Resend verification</a></div></#if>
               <#nested "socialProviders">
               <#if pageId == "login" && (!social.providers?? || !social.providers?has_content)>
                 <section class="ataimo-social-pending" aria-label="Social sign-in">

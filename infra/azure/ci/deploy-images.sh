@@ -15,6 +15,7 @@ fi
 helm upgrade portal-jobs "$ROOT/infra/local-kubernetes/charts/portal-jobs" -n app --reuse-values \
   --set-string image="$APP_IMAGE" --set-string workerImage="$WORKER_IMAGE" \
   --set-string integrationSecret=portal-integrations "${PULL_VALUES[@]}" --wait --wait-for-jobs --timeout 10m
+bash "$ROOT/infra/azure/scripts/configure-registration-protection.sh"
 helm upgrade portfolio "$ROOT/infra/local-kubernetes/charts/service" -n app --reuse-values \
   --set-string image="$APP_IMAGE" --set-string integrationSecret=portal-integrations \
   "${PULL_VALUES[@]}" --wait --timeout 10m

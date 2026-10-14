@@ -1572,3 +1572,88 @@ footer strong {
     transition: none;
   }
 }
+.signup-page {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--spacing-layout-xl);
+  align-items: start;
+}
+.signup-introduction h1 {
+  font-size: var(--text-section);
+  max-width: 12ch;
+}
+.signup-introduction p {
+  max-width: 44ch;
+}
+.signup-panel {
+  padding: var(--spacing-layout-xl);
+  background: var(--color-bg-surface);
+  border: 1px solid var(--color-border-grid);
+  border-radius: var(--radius-panel);
+  min-width: 0;
+}
+.signup-panel h2 {
+  margin-top: 0;
+}
+.signup-panel .contact-form {
+  margin-block: var(--spacing-layout-lg);
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  display: grid;
+  gap: var(--spacing-layout-lg);
+}
+.signup-panel .contact-form label {
+  margin: 0;
+  font-size: var(--text-action);
+}
+.signup-panel .contact-form input:not([type="checkbox"]) {
+  font-size: var(--text-body);
+}
+.signup-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-layout-md);
+}
+.signup-links .text-link {
+  border: 0;
+  background: none;
+  padding: 0;
+  color: var(--color-accent-primary);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+  cursor: pointer;
+  transition: transform 180ms var(--ease-terminal);
+}
+.signup-links .text-link:active {
+  transform: scale(0.98);
+}
+.signup-terms {
+  font-size: var(--text-label);
+  margin-bottom: 0;
+}
+.signup-honeypot {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+}
+.signup-challenge {
+  --altcha-color-base: var(--color-bg-surface);
+  --altcha-color-base-content: var(--color-text-main);
+  --altcha-border-color: var(--color-border-grid);
+  --altcha-color-success: var(--color-accent-secondary);
+  --altcha-color-success-content: var(--color-bg-surface);
+  --altcha-max-width: 100%;
+  --altcha-color-primary: var(--color-accent-primary);
+}
+@media (max-width: 700px) {
+  .signup-page {
+    grid-template-columns: 1fr;
+  }
+  .signup-panel {
+    padding: var(--spacing-layout-lg);
+  }
+}

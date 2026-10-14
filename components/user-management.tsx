@@ -178,7 +178,14 @@ export default function UserManagement({
                     <strong>{p.name}</strong>
                     <span>{p.email}</span>
                   </span>
-                  <span className="portal-state">{p.status}</span>
+                  <span
+                    className="portal-state"
+                    data-state={
+                      p.status === "Pending verification" ? "pending" : p.status
+                    }
+                  >
+                    {p.status}
+                  </span>
                 </button>
               </li>
             ))}

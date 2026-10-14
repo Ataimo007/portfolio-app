@@ -10,7 +10,7 @@ with tarfile.open(target, 'w:gz') as archive:
         rel = path.relative_to(root)
         if any(part in excluded for part in rel.parts) or not path.is_file() or path.is_symlink():
             continue
-        if path.name in {'PLAN.md', 'CODEX_PROMPT.md', 'ATAIMO_PLATFORM_HANDOFF.md', 'ASSET_MANIFEST.txt', 'skills-lock.json', '.codexrules'}:
+        if path.name in {'PLAN.md', 'CODEX_PROMPT.md', 'ATAIMO_PLATFORM_HANDOFF.md', 'portfolio-registration-abuse-handoff.md', 'ASSET_MANIFEST.txt', 'skills-lock.json', '.codexrules'}:
             continue
         if path.name.startswith('.env') or path.name == 'terraform.tfvars' or path.suffix in {'.tfstate', '.tfplan', '.pem', '.key', '.p12'} or '.tfstate.' in path.name or 'kubeconfig' in path.name:
             continue

@@ -132,6 +132,11 @@ export async function requireOwner() {
   return user;
 }
 export async function createSession(claims: oidc.IDToken, rawToken: string) {
+  if (claims.email_verified !== true)
+    throw new PortalError(
+      403,
+      "Verify your email before opening the workspace.",
+    );
   const realm = claims.realm_access as { roles?: unknown } | undefined;
   const roles = Array.isArray(realm?.roles)
     ? realm.roles.filter(

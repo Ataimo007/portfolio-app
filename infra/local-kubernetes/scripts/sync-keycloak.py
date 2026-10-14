@@ -53,7 +53,7 @@ client["directAccessGrantsEnabled"] = False
 client.setdefault("attributes", {}).update({"pkce.code.challenge.method": "S256", "post.logout.redirect.uris": site_url + "/portal", "access.token.lifespan": "1800"})
 mapper = {"name": "portal-realm-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-realm-role-mapper", "consentRequired": False, "config": {"multivalued": "true", "claim.name": "realm_access.roles", "jsonType.label": "String", "id.token.claim": "true", "access.token.claim": "true", "userinfo.token.claim": "true"}}
 client["protocolMappers"] = [m for m in client.get("protocolMappers", []) if m.get("name") != mapper["name"]] + [mapper]
-client["redirectUris"] = [site_url + "/api/auth/callback/keycloak"]
+client["redirectUris"] = [site_url + "/api/auth/callback/keycloak", site_url + "/login"]
 client["webOrigins"] = [site_url]
 url = base + f'/admin/realms/ataimo/clients/{client["id"]}'
 with urllib.request.urlopen(urllib.request.Request(url, headers=headers, data=json.dumps(client).encode(), method="PUT"), timeout=15) as response:
@@ -78,7 +78,7 @@ realm = admin_call()
 realm.update({
     'displayName': 'Ataimo Edem',
     'loginTheme': 'ataimo',
-    'registrationAllowed': True,
+    'registrationAllowed': False,
     'loginWithEmailAllowed': True,
     'duplicateEmailsAllowed': False,
     'resetPasswordAllowed': True,
@@ -101,15 +101,18 @@ if mail_raw:
         'replyTo': 'contact@ataimo.com',
     }
 if not realm.get('smtpServer', {}).get('host'):
-    realm.update({'verifyEmail': False, 'resetPasswordAllowed': False})
+    realm.update({'verifyEmail': True, 'resetPasswordAllowed': False})
     print('Email recovery awaits SMTP provisioning; rerun identity sync after mail setup')
+guard_raw = subprocess.check_output(['kubectl', 'get', 'secret', 'identity-mail-guard', '-n', 'identity', '--ignore-not-found', '-o', 'json'], text=True).strip()
+if guard_raw:
+    realm['smtpServer'] = {'host': '127.0.0.1', 'port': '2525', 'ssl': 'false', 'starttls': 'false', 'auth': 'false', 'from': 'hello@ataimo.com', 'fromDisplayName': 'Ataimo'}
 admin_call(method='PUT', data=realm)
 client_role = admin_call('/roles/client')
 default = realm['defaultRole']['id']
 composites = admin_call('/roles-by-id/' + default + '/composites')
 if not any(role['id'] == client_role['id'] for role in composites):
     admin_call('/roles-by-id/' + default + '/composites', 'POST', [client_role])
-print('Branded registration enabled; new accounts receive client access only')
+print('Direct registration disabled; protected application signup creates pending client accounts')
 
 social_raw = subprocess.check_output(['kubectl', 'get', 'secret', 'social-login-credentials', '-n', 'identity', '--ignore-not-found', '-o', 'json'], text=True).strip()
 if social_raw:
@@ -152,7 +155,13 @@ management = admin_call('/clients?clientId=realm-management')[0]
 roles = [admin_call('/clients/' + management['id'] + '/roles/' + name)
     for name in ['manage-users', 'view-users', 'query-users', 'view-realm', 'view-events', 'view-identity-providers']]
 admin_call('/users/' + service_user['id'] + '/role-mappings/clients/' + management['id'], 'POST', roles)
+profile = admin_call('/users/profile')
+if not any(a.get('name') == 'registrationSource' for a in profile.get('attributes', [])):
+    profile.setdefault('attributes', []).append({'name': 'registrationSource', 'displayName': 'Registration source', 'permissions': {'view': ['admin'], 'edit': ['admin']}, 'multivalued': False})
+    admin_call('/users/profile', 'PUT', profile)
 realm['eventsEnabled'] = True
-realm['eventsExpiration'] = 604800
+realm['eventsExpiration'] = 2592000
+realm['adminEventsEnabled'] = True
+realm['adminEventsDetailsEnabled'] = False
 admin_call(method='PUT', data=realm)
-print('Backend account API enabled with user-management permissions; sign-in events retained for seven days')
+print('Backend account API enabled with user-management permissions; authentication and administration event metadata retained for thirty days')

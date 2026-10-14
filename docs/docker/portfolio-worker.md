@@ -10,7 +10,13 @@ Email jobs support retries and unsubscribe preferences for optional notification
 
 ## Companion application
 
-Use with [ataimo007/ataimo-portfolio](https://hub.docker.com/r/ataimo007/ataimo-portfolio). The application serves the public website, APIs, authentication callbacks and client/owner workspaces. This worker does not serve the portfolio UI and is not a standalone mail server, identity provider or broker. Run matching versions from the same pipeline build.
+Use with [ataimo007/ataimo-portfolio](https://hub.docker.com/r/ataimo007/ataimo-portfolio). The application serves the public website, APIs, authentication callbacks and client/owner workspaces. The image also contains an optional `identity-mail-guard.cjs` entrypoint used
+as a Keycloak Helm sidecar. It enforces durable recipient cooldowns, global
+identity-email limits and suppression checks on loopback SMTP before forwarding
+over verified TLS to Mailu. It uses a dedicated limited database role and
+server-side credentials. The default image command remains the platform worker.
+
+This worker does not serve the portfolio UI and is not a standalone mail server, identity provider or broker. Run matching versions from the same pipeline build.
 
 ## Runtime and packaging
 

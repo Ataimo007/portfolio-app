@@ -69,7 +69,10 @@ export async function GET(request: Request) {
             person.username,
           email: person.email,
           enabled: person.enabled,
-          status: profile.account_status,
+          status:
+            !person.emailVerified && profile.account_status === "active"
+              ? "Pending verification"
+              : profile.account_status,
           username: person.username,
           firstName: person.firstName || "",
           lastName: person.lastName || "",
@@ -131,7 +134,10 @@ export async function GET(request: Request) {
           email: p.email || "",
           enabled: p.enabled,
           status: p.enabled
-            ? states.get(p.id) || "active"
+            ? !p.emailVerified &&
+              (!states.get(p.id) || states.get(p.id) === "active")
+              ? "Pending verification"
+              : states.get(p.id) || "active"
             : states.get(p.id) === "closed"
               ? "closed"
               : "disabled",

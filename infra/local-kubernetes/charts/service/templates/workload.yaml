@@ -1,3 +1,4 @@
+{{- $guard := .Values.identityMailGuard | default dict -}}
 apiVersion: apps/v1
 kind: {{ ternary "StatefulSet" "Deployment" .Values.persistence.enabled }}
 metadata:
@@ -19,6 +20,9 @@ spec:
     metadata:
       annotations:
         checksum/config: {{ toJson .Values.config | sha256sum }}
+        {{- if $guard.enabled }}
+        checksum/identity-mail-guard: {{ $guard.revision | default "initial" | quote }}
+        {{- end }}
         {{- with .Values.themeRevision }}
         checksum/theme: {{ . | quote }}
         {{- end }}
@@ -97,6 +101,25 @@ spec:
             {{ toYaml . | nindent 12 }}
             {{- end }}
           {{- end }}
+        {{- if $guard.enabled }}
+        - name: identity-mail-guard
+          image: {{ $guard.image | quote }}
+          command: [node, /app/identity-mail-guard.cjs]
+          envFrom:
+            - secretRef: {name: identity-mail-guard}
+          resources:
+            requests: {cpu: 25m, memory: 64Mi}
+            limits: {memory: 128Mi}
+          readinessProbe:
+            httpGet: {path: /health, port: 8026}
+          livenessProbe:
+            httpGet: {path: /health, port: 8026}
+            initialDelaySeconds: 20
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+            capabilities: {drop: [ALL]}
+        {{- end }}
       {{- if or .Values.config .Values.extraVolumes }}
       volumes:
         {{- if .Values.config }}

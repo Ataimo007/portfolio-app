@@ -11,6 +11,7 @@ FROM node:22-bookworm-slim AS worker
 WORKDIR /app
 ENV NODE_ENV=production
 COPY --from=build --chown=node:node /app/dist/worker.cjs ./worker.cjs
+COPY --from=build --chown=node:node /app/dist/identity-mail-guard.cjs ./identity-mail-guard.cjs
 COPY --chown=node:node LICENSE COPYRIGHT.md PATENTS.md /app/licenses/
 COPY --chown=node:node public/fonts/*LICENSE* /app/licenses/
 USER node

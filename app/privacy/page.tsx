@@ -39,8 +39,12 @@ const sections: LegalSection[] = [
         <p>
           Infrastructure may process IP addresses, request timing, browser
           details and authentication events for security and troubleshooting.
-          Public platform status reports use aggregate service health; they do
-          not publish private messages or client records.
+          Registration protection records request IP addresses, browser details,
+          timing and a keyed hash of your email address for up to 30 days. A
+          self-hosted verification check uses your device to complete a short
+          computation; it does not send registration details to a CAPTCHA
+          vendor. Public platform status reports use aggregate service health;
+          they do not publish private messages or client records.
         </p>
       </>
     ),
