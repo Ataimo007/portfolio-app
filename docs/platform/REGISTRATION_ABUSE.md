@@ -34,7 +34,8 @@ and peer addresses match. Exact request summaries are private.
 The primary complaint account was created 2026-10-10 16:48:30.841 UTC,
 registered at 16:48:30.850 and triggered verification at 16:48:31.475 from the
 same public IP. The REGISTER details specify `register_method: form`,
-OpenID Connect code flow and the portfolio callback URL. It remains enabled, email-unverified, with no successful login.
+OpenID Connect code flow and the portfolio callback URL. At evidence capture it was enabled, email-unverified, with no successful login;
+it is now reversibly quarantined with the confirmed cohort.
 Two later action-token errors are `expired_code`, not successful verification.
 The inactive-mailbox account was created 2026-10-12 01:04:45.224 UTC and triggered
 verification at 01:04:45.909 from another public IP; it is also unverified with
@@ -153,16 +154,45 @@ the unprotected native signup path is not a safe rollback.
 
 ## Validation status
 
-Local: production build, TypeScript, lint, Helm rendering and focused
-challenge/policy tests. Desktop/mobile browser checks solve the actual widget,
-submit a payload, show success and switch to resend; screenshots are ignored
-review artifacts. No live test emails go to unrelated addresses.
+Local checks and the final CI quality job passed: production build, TypeScript,
+lint, Helm rendering, challenge/policy unit checks and desktop/mobile browser
+checks. Live screenshots confirm the existing visual language is preserved.
 
-Production: direct self-registration was immediately disabled after evidence
-capture. Protected signup, durable mail guard and end-to-end verification are
-pending the delivery run and owned-mailbox validation. The 45 confirmed, still-unverified form-registration accounts were reversibly
-quarantined after checking current verification and session state; no accounts
-were deleted. Their original enabled flags and IDs are preserved privately.
-The two verified accounts and four inconclusive accounts remain unchanged.
-Final live evidence will be recorded after rollout. Re-enable a quarantined
-account only after owner review and email-owner credential recovery.
+Production rollout completed successfully through
+[GitHub Actions run 38525538199](https://github.com/Ataimo007/portfolio-app/actions/runs/38525538199).
+The app and worker are each 1/1 ready; Keycloak and its mail guard are 2/2 ready.
+The rollout required two corrections: explicit numeric UID/GID 1000 for the
+non-root guard, and reducing the app CPU reservation from 100m to 50m to retain
+rolling-update headroom on the single node. Its CPU limit and Azure VM are
+unchanged. Keycloak was temporarily unavailable during the first correction;
+normal login is now verified against the restored deployment.
+
+An owned-mailbox test completed the live flow: solve the real challenge, create
+an unverified account without any requester-selected password, receive the native
+signed email, verify ownership, choose a password and log in through the app.
+The resulting user could access the client portal and received HTTP 403 from the
+admin Users endpoint. All four social providers remain enabled. Spoofed forwarded
+IP headers were ignored, replay and cross-origin requests were rejected, and the
+IP attempt ceiling returned HTTP 429. Owned test accounts, profile/delivery rows,
+mailbox messages and test audit fixtures were removed after validation.
+
+Direct SMTP recipient probes verified suppression, the immediate resend cooldown
+and rejection of a fourth hourly reservation. These probes sent no DATA or email
+bodies, and their fixtures were removed. Two actual suppression records remain.
+The global twenty/hour ceiling is configured and uses the same atomic durable
+policy; production was not deliberately saturated to test it. The signup test
+used local delivery to the owned mailbox through Mailu, so it does not claim a
+new external SMTP2GO delivery or improved reputation score.
+
+The 45 confirmed, still-unverified form-registration accounts were reversibly
+quarantined after checking current verification and session state; no suspect
+accounts were deleted. Their original enabled flags and IDs are preserved
+privately. The two verified accounts and four inconclusive accounts remain
+unchanged. Re-enable a quarantined account only after owner review and
+email-owner credential recovery.
+
+No new provider credentials are required for the deployed protection. A full
+SMTP2GO activity/suppression export or appropriately scoped API access remains
+useful for ongoing complaint and bounce monitoring. Keep provider suppressions
+in place; sender reputation and inbox placement have not been independently
+verified.
