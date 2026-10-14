@@ -17,7 +17,7 @@ helm upgrade portal-jobs "$ROOT/infra/local-kubernetes/charts/portal-jobs" -n ap
   --set-string integrationSecret=portal-integrations "${PULL_VALUES[@]}" --wait --wait-for-jobs --timeout 10m
 bash "$ROOT/infra/azure/scripts/configure-registration-protection.sh"
 helm upgrade portfolio "$ROOT/infra/local-kubernetes/charts/service" -n app --reuse-values \
-  --set-string image="$APP_IMAGE" --set-string integrationSecret=portal-integrations \
+  --set-string image="$APP_IMAGE" --set-string integrationSecret=portal-integrations --set resources.requests.cpu=50m \
   "${PULL_VALUES[@]}" --wait --timeout 10m
 kubectl rollout status deployment/portfolio -n app --timeout=5m
 kubectl rollout status deployment/portfolio-worker -n app --timeout=5m
