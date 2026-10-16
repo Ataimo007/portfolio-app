@@ -1495,6 +1495,7 @@
 }
 .user-directory-controls .user-search {
   flex: 1 1 calc(var(--spacing-layout-xl) * 10);
+  min-width: 0;
   margin-bottom: 0;
 }
 .user-status-filter {

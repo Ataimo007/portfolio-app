@@ -419,9 +419,18 @@ test("owner filters user status across pages and searches within the chosen cate
   await expect(page.locator(".user-directory")).toContainText(
     "member34@example.invalid",
   );
+  const controls = await page.locator(".user-directory-controls").boundingBox();
+  const searchButton = await page
+    .getByRole("button", { name: "Search", exact: true })
+    .boundingBox();
+  expect(searchButton!.x + searchButton!.width).toBeLessThanOrEqual(
+    controls!.x + controls!.width + 1,
+  );
+  await page.evaluate(() => window.scrollTo({ top: 0, behavior: "instant" }));
   await page.screenshot({
     path: `.impeccable/review/user-status-${test.info().project.name}.png`,
     fullPage: true,
+    animations: "disabled",
   });
   expect(
     await page.evaluate(
