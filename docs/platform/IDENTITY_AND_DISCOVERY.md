@@ -117,6 +117,41 @@ The status-precedence and multi-batch pagination unit checks also passed.
 
 The default local Turbopack build timed out in its CSS loader under resource
 pressure; the alternate production build completed successfully. CI continues
-to exercise the standard production build. Live deployment evidence will be
-appended after the delivery run; no deployment success is inferred from a local
-build alone.
+to exercise the standard production build. The final standard CI build and full
+quality suite passed in the production delivery run below.
+
+### Verification flow
+
+Story: the owner selects a category in Users, the client sends its status/search
+and filtered offset to the owner-only API, Keycloak identities are combined with
+PostgreSQL account state, and the matching page is rendered accessibly. Public
+search crawlers separately receive canonical HTML metadata and the public sitemap.
+
+| Boundary | Evidence |
+| --- | --- |
+| UI renders and receives the response | Desktop/mobile browser checks passed; native select, search, empty categories and pagination exercised with reserved-domain fixtures. |
+| Client to API | Category and search were transmitted together; category changes reset the offset to zero. |
+| API to identity/database | Live privileged read-only API check returned two active and 49 disabled accounts, with disabled results split into 30 and 19. |
+| API permission/validation | Anonymous directory request returned 401; invalid category returned 400. Existing owner authorization remains enforced. |
+| Public search response | Live About contained connected Website/ProfilePage data; sitemap included credential pages; robots referenced the production sitemap. |
+
+The live directory check used a short-lived privileged validation session and
+removed it in a finally block; it did not create an identity or send mail. This
+is evidence for the API/data boundary, not a claim to have completed a fresh
+third-party social login. SSO protocol initiation/forged-callback checks are
+recorded separately above.
+
+### Final production rollout
+
+[Delivery run 38833923591](https://github.com/Ataimo007/portfolio-app/actions/runs/38833923591)
+completed successfully for application commit `7626aea`: standard production
+build/full quality suite, Docker Hub publication and Azure deployment all passed.
+The app and worker are ready, and Keycloak plus its SMTP guard are 2/2 ready.
+The live directory/metadata checks were repeated against this final rollout with
+the same two-active/49-disabled result and successful cleanup. SSO initiation and
+forged-callback rejection were confirmed again after Keycloak became ready.
+
+The final mobile check additionally asserts the search button remains inside its
+container; `min-width: 0` prevents the flex search form from clipping its button.
+No test identities or emails were created. The address-spelling clarification and
+owner-managed search-console verification remain the only noted follow-ups.
