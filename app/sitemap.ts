@@ -1,7 +1,7 @@
 import type { MetadataRoute } from "next";
-import { projects } from "@/content/site";
+import { publicURL } from "@/lib/seo";
+import { projects, certifications } from "@/content/site";
 export default function sitemap(): MetadataRoute.Sitemap {
-  const base = process.env.SITE_URL || "https://ataimoedem.com";
   return [
     "",
     "/about",
@@ -15,5 +15,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
     "/privacy",
     "/terms",
     ...projects.map((p) => `/projects/${p.slug}`),
-  ].map((p) => ({ url: base + p }));
+    ...certifications.map((c) => `/certifications/${c.slug}`),
+  ].map((p) => ({ url: publicURL(p || "/") }));
 }

@@ -1,8 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
 import { Intro, ProjectList } from "@/components/site";
-export const metadata = {
-  title: "Projects",
-  alternates: { canonical: "/projects" },
-};
+export const metadata = pageMetadata(
+  "Projects",
+  "Explore engineering case studies in API portal migration, Kubernetes automation, production diagnostics and the Ataimo consultancy platform.",
+  "/projects",
+);
 export default function Page() {
   return (
     <div className="page">

@@ -361,3 +361,73 @@ test("new clients start a conversation only after choosing Ataimo", async ({
   await expect(page.getByLabel("Your message", { exact: true })).toBeVisible();
   expect(created).toBe(true);
 });
+
+test("owner filters user status across pages and searches within the chosen category", async ({
+  page,
+}) => {
+  await fixture(page, true);
+  const directory = Array.from({ length: 34 }, (_, index) => ({
+    id: `20000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    name: `Directory member ${index + 1}`,
+    email: `member${index + 1}@example.invalid`,
+    enabled: index < 2,
+    status:
+      index === 0
+        ? "active"
+        : index === 1
+          ? "Pending verification"
+          : "disabled",
+  }));
+  const requests: URLSearchParams[] = [];
+  await page.route("**/api/portal/users?*", (route) => {
+    const params = new URL(route.request().url()).searchParams;
+    requests.push(params);
+    const status = params.get("status") || "all";
+    const search = params.get("search") || "";
+    const first = Number(params.get("first") || 0);
+    const results = directory.filter(
+      (user) =>
+        (status === "all" ||
+          user.status ===
+            (status === "pending" ? "Pending verification" : status)) &&
+        `${user.name} ${user.email}`.includes(search),
+    );
+    return route.fulfill({
+      json: {
+        users: results.slice(first, first + 30),
+        hasMore: results.length > first + 30,
+      },
+    });
+  });
+  await page.goto("/admin");
+  await page.getByRole("tab", { name: "Users", exact: true }).click();
+  const filter = page.getByLabel("Account status", { exact: true });
+  await expect(filter).toBeVisible();
+  await page.getByRole("button", { name: "Next", exact: true }).click();
+  await expect(page.locator(".user-directory li")).toHaveCount(4);
+  await filter.selectOption("pending");
+  await expect(page.locator(".user-directory li")).toHaveCount(1);
+  await expect(page.locator(".user-directory")).toContainText(
+    "Pending verification",
+  );
+  expect(requests.at(-1)?.get("first")).toBe("0");
+  await filter.selectOption("disabled");
+  await expect(page.locator(".user-directory li")).toHaveCount(30);
+  await page.getByLabel("Search users").fill("member34@");
+  await page.getByRole("button", { name: "Search", exact: true }).click();
+  await expect(page.locator(".user-directory li")).toHaveCount(1);
+  await expect(page.locator(".user-directory")).toContainText(
+    "member34@example.invalid",
+  );
+  await page.screenshot({
+    path: `.impeccable/review/user-status-${test.info().project.name}.png`,
+    fullPage: true,
+  });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
+  await filter.selectOption("closed");
+  await expect(page.getByText("No users match these filters.")).toBeVisible();
+});

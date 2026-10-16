@@ -1,8 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
 import { Intro, Experience } from "@/components/site";
-export const metadata = {
-  title: "Experience",
-  alternates: { canonical: "/experience" },
-};
+export const metadata = pageMetadata(
+  "Experience",
+  "Explore Ataimo Edem’s experience in customer engineering, Azure technical support, solutions architecture and enterprise API platforms.",
+  "/experience",
+);
 export default function Page() {
   return (
     <div className="page">

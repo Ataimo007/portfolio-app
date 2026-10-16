@@ -1485,3 +1485,46 @@
   background: var(--color-tint-warm);
   color: var(--color-accent-warm);
 }
+
+.user-directory-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--spacing-layout-md);
+  margin-bottom: var(--spacing-layout-lg);
+}
+.user-directory-controls .user-search {
+  flex: 1 1 calc(var(--spacing-layout-xl) * 10);
+  margin-bottom: 0;
+}
+.user-status-filter {
+  display: grid;
+  gap: var(--spacing-layout-xs);
+  color: var(--color-text-muted);
+  font-size: var(--text-label);
+}
+.user-status-filter select {
+  min-height: calc(var(--spacing-layout-md) * 3);
+  max-width: 100%;
+  padding: var(--spacing-layout-md);
+  border: 1px solid var(--color-border-grid);
+  border-radius: var(--radius-control);
+  background: var(--color-bg-surface);
+  color: var(--color-text-main);
+  font: inherit;
+}
+@media (max-width: 700px) {
+  .user-status-filter {
+    width: 100%;
+  }
+}
+@media (max-width: 700px) {
+  html:has(.user-management) {
+    scroll-padding-bottom: calc(
+      var(--spacing-layout-xl) * 2 + env(safe-area-inset-bottom)
+    );
+  }
+  .user-management :is(button, input, select) {
+    scroll-margin-block: var(--spacing-layout-xl);
+  }
+}

@@ -20,12 +20,13 @@ import PwaRegistration from "@/components/pwa-registration";
 import Navigation from "@/components/navigation";
 import { SocialLinks } from "@/components/site";
 import { profile } from "@/content/site";
+import { publicURL, siteOrigin, structuredData } from "@/lib/seo";
 import "./globals.css";
 import "./brand.css";
 import "./portal.css";
 import "./platform.css";
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL || "https://ataimoedem.com"),
+  metadataBase: new URL(siteOrigin),
   title: {
     default:
       "Ataimo Edem | API Management, Solutions Architecture & Customer Engineering",
@@ -35,9 +36,11 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Ataimo", statusBarStyle: "default" },
   icons: { apple: "/brand/pwa-192.png" },
   description: profile.summary,
+  authors: [{ name: profile.name, url: publicURL("/about") }],
   openGraph: {
     type: "website",
     siteName: "Ataimo Edem",
+    locale: "en_GB",
     title: "Ataimo Edem — Enterprise API Platforms",
     description: profile.summary,
   },
@@ -111,13 +114,37 @@ export default function RootLayout({
           <script
             type="application/ld+json"
             dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
+              __html: structuredData({
                 "@context": "https://schema.org",
-                "@type": "Person",
-                name: profile.name,
-                jobTitle: "Customer Success Engineer",
-                url: metadata.metadataBase?.toString(),
-                sameAs: [profile.github, profile.linkedin],
+                "@graph": [
+                  {
+                    "@type": "Person",
+                    "@id": publicURL("/#person"),
+                    name: profile.name,
+                    jobTitle: "Customer Success Engineer",
+                    description: profile.summary,
+                    url: publicURL("/about"),
+                    image: publicURL("/images/ataimo-portrait-4x5.webp"),
+                    email: profile.email,
+                    sameAs: [profile.github, profile.linkedin],
+                    knowsAbout: [
+                      "API management",
+                      "Solutions architecture",
+                      "Kubernetes",
+                      "Microsoft Azure",
+                      "Customer engineering",
+                    ],
+                  },
+                  {
+                    "@type": "WebSite",
+                    "@id": publicURL("/#website"),
+                    name: "Ataimo Edem — Engineering & Architecture",
+                    url: publicURL(),
+                    description: profile.summary,
+                    inLanguage: "en",
+                    publisher: { "@id": publicURL("/#person") },
+                  },
+                ],
               }),
             }}
           />

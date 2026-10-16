@@ -1,5 +1,8 @@
 import Link from "next/link";
-export const metadata = { title: "You’re offline" };
+export const metadata = {
+  robots: { index: false, follow: false },
+  title: "You’re offline",
+};
 export default function Page() {
   return (
     <div className="page portal-page">

@@ -17,6 +17,12 @@ import {
   PortalError,
   sameOrigin,
 } from "@/lib/portal-http";
+import {
+  filteredUserPage,
+  userStatus,
+  userStatusFilters,
+  userStatusLabel,
+} from "@/lib/user-directory";
 const idSchema = z.string().uuid();
 async function record(identityId: string) {
   const person = await kc<IdentityUser>(`/users/${identityId}`);
@@ -69,10 +75,7 @@ export async function GET(request: Request) {
             person.username,
           email: person.email,
           enabled: person.enabled,
-          status:
-            !person.emailVerified && profile.account_status === "active"
-              ? "Pending verification"
-              : profile.account_status,
+          status: userStatusLabel(userStatus(person, profile.account_status)),
           username: person.username,
           firstName: person.firstName || "",
           lastName: person.lastName || "",
@@ -113,10 +116,9 @@ export async function GET(request: Request) {
       .string()
       .max(200)
       .parse(query.get("search") || "");
-    const people = await kc<IdentityUser[]>(
-      "/users?" +
-        new URLSearchParams({ first: String(first), max: "30", search }),
-    );
+    const status = z
+      .enum(userStatusFilters)
+      .parse(query.get("status") || "all");
     const profiles = await database().query(
       "SELECT subject,account_status FROM client_profiles WHERE issuer=$1",
       [process.env.KEYCLOAK_ISSUER],
@@ -124,25 +126,36 @@ export async function GET(request: Request) {
     const states = new Map(
       profiles.rows.map((p) => [p.subject, p.account_status]),
     );
+    const { people, hasMore } = await filteredUserPage(
+      (offset, max) =>
+        kc<IdentityUser[]>(
+          "/users?" +
+            new URLSearchParams({
+              first: String(offset),
+              max: String(max),
+              search,
+              ...(status === "active" || status === "pending"
+                ? {
+                    enabled: "true",
+                    emailVerified: String(status === "active"),
+                  }
+                : {}),
+            }),
+        ),
+      (p) =>
+        !p.username.startsWith("service-account-") &&
+        (status === "all" || userStatus(p, states.get(p.id)) === status),
+      first,
+    );
     return json({
-      users: people
-        .filter((p) => !p.username.startsWith("service-account-"))
-        .map((p) => ({
-          id: p.id,
-          name:
-            [p.firstName, p.lastName].filter(Boolean).join(" ") || p.username,
-          email: p.email || "",
-          enabled: p.enabled,
-          status: p.enabled
-            ? !p.emailVerified &&
-              (!states.get(p.id) || states.get(p.id) === "active")
-              ? "Pending verification"
-              : states.get(p.id) || "active"
-            : states.get(p.id) === "closed"
-              ? "closed"
-              : "disabled",
-        })),
-      hasMore: people.length === 30,
+      users: people.map((p) => ({
+        id: p.id,
+        name: [p.firstName, p.lastName].filter(Boolean).join(" ") || p.username,
+        email: p.email || "",
+        enabled: p.enabled,
+        status: userStatusLabel(userStatus(p, states.get(p.id))),
+      })),
+      hasMore,
     });
   });
 }

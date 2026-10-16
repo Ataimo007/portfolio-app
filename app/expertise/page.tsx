@@ -1,8 +1,10 @@
+import { pageMetadata } from "@/lib/seo";
 import { Intro, Expertise } from "@/components/site";
-export const metadata = {
-  title: "Expertise",
-  alternates: { canonical: "/expertise" },
-};
+export const metadata = pageMetadata(
+  "Expertise",
+  "API management, cloud architecture, Kubernetes and enterprise integrations: explore Ataimo Edem’s hands-on technical expertise.",
+  "/expertise",
+);
 export default function Page() {
   return (
     <div className="page">

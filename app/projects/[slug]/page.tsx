@@ -1,3 +1,4 @@
+import { pageMetadata, publicURL, structuredData } from "@/lib/seo";
 import RouteDemo from "@/components/route-demo";
 import { notFound } from "next/navigation";
 import { readFile } from "node:fs/promises";
@@ -17,11 +18,8 @@ export async function generateMetadata({
 }) {
   const { slug } = await params;
   const p = projects.find((p) => p.slug === slug);
-  return {
-    title: p?.title,
-    description: p?.summary,
-    alternates: { canonical: `/projects/${slug}` },
-  };
+  if (!p) notFound();
+  return pageMetadata(p.title, p.summary, `/projects/${slug}`);
 }
 export default async function Page({
   params,
@@ -67,13 +65,17 @@ export default async function Page({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
+          __html: structuredData({
             "@context": "https://schema.org",
-            "@type": "CreativeWork",
+            "@type": "SoftwareSourceCode",
             name: p.title,
             description: p.summary,
-            author: { "@type": "Person", name: "Ataimo Edem" },
-            url: `${process.env.SITE_URL || "https://ataimoedem.com"}/projects/${p.slug}`,
+            author: {
+              "@type": "Person",
+              "@id": publicURL("/#person"),
+              name: "Ataimo Edem",
+            },
+            url: publicURL(`/projects/${p.slug}`),
             codeRepository: p.private ? undefined : p.url,
           }),
         }}

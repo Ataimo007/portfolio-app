@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
+import type { UserStatusFilter } from "@/lib/user-directory";
 import { ArrowLeft, MessageSquare, Search, Users } from "lucide-react";
 type Person = {
   id: string;
@@ -36,6 +37,7 @@ export default function UserManagement({
     [selected, setSelected] = useState<Details | null>(null),
     [search, setSearch] = useState(""),
     [query, setQuery] = useState(""),
+    [status, setStatus] = useState<UserStatusFilter>("all"),
     [first, setFirst] = useState(0),
     [more, setMore] = useState(false),
     [loading, setLoading] = useState(true),
@@ -43,28 +45,40 @@ export default function UserManagement({
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [confirm, setConfirm] = useState("");
-  const load = useCallback(async () => {
-    setLoading(true);
-    try {
-      const r = await fetch(
-        "/api/portal/users?" +
-          new URLSearchParams({ search: query, first: String(first) }),
-        { cache: "no-store" },
-      );
-      const data = await r.json();
-      if (!r.ok) throw Error(data.error);
-      setUsers(data.users);
-      setMore(data.hasMore);
-      setError("");
-    } catch (e) {
-      setError((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  }, [first, query]);
+  const load = useCallback(
+    async (signal?: AbortSignal) => {
+      setLoading(true);
+      try {
+        const r = await fetch(
+          "/api/portal/users?" +
+            new URLSearchParams({
+              search: query,
+              first: String(first),
+              status,
+            }),
+          { cache: "no-store", signal },
+        );
+        const data = await r.json();
+        if (!r.ok) throw Error(data.error);
+        if (signal?.aborted) return;
+        setUsers(data.users);
+        setMore(data.hasMore);
+        setError("");
+      } catch (e) {
+        if (!signal?.aborted) setError((e as Error).message);
+      } finally {
+        if (!signal?.aborted) setLoading(false);
+      }
+    },
+    [first, query, status],
+  );
   useEffect(() => {
-    const timer = setTimeout(load, 0);
-    return () => clearTimeout(timer);
+    const controller = new AbortController();
+    const timer = setTimeout(() => void load(controller.signal), 0);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
   }, [load]);
   useEffect(() => {
     if (!notice) return;
@@ -147,50 +161,72 @@ export default function UserManagement({
       )}
       {!selected ? (
         <>
-          <form
-            className="user-search"
-            onSubmit={(e) => {
-              e.preventDefault();
-              setFirst(0);
-              setQuery(search);
-            }}
-          >
-            <label className="sr-only" htmlFor="user-search">
-              Search users
-            </label>
-            <input
-              id="user-search"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search by name or email"
-              maxLength={200}
-            />
-            <button className="button">
-              <Search size={16} /> Search
-            </button>
-          </form>
+          <div className="user-directory-controls">
+            <form
+              className="user-search"
+              onSubmit={(e) => {
+                e.preventDefault();
+                setFirst(0);
+                setQuery(search);
+              }}
+            >
+              <label className="sr-only" htmlFor="user-search">
+                Search users
+              </label>
+              <input
+                id="user-search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search by name or email"
+                maxLength={200}
+              />
+              <button className="button">
+                <Search size={16} /> Search
+              </button>
+            </form>
+            <div className="user-status-filter">
+              <label htmlFor="user-status-filter">Account status</label>
+              <select
+                id="user-status-filter"
+                value={status}
+                onChange={(e) => {
+                  setFirst(0);
+                  setStatus(e.target.value as UserStatusFilter);
+                }}
+              >
+                <option value="all">All statuses</option>
+                <option value="active">Active</option>
+                <option value="pending">Pending verification</option>
+                <option value="disabled">Disabled</option>
+                <option value="closed">Closed</option>
+              </select>
+            </div>
+          </div>
           {loading && <p role="status">Loading users…</p>}
-          <ul className="user-directory">
-            {users.map((p) => (
-              <li key={p.id}>
-                <button disabled={busy} onClick={() => void open(p.id)}>
-                  <span>
-                    <strong>{p.name}</strong>
-                    <span>{p.email}</span>
-                  </span>
-                  <span
-                    className="portal-state"
-                    data-state={
-                      p.status === "Pending verification" ? "pending" : p.status
-                    }
-                  >
-                    {p.status}
-                  </span>
-                </button>
-              </li>
-            ))}
+          <ul className="user-directory" aria-busy={loading}>
+            {!loading &&
+              users.map((p) => (
+                <li key={p.id}>
+                  <button disabled={busy} onClick={() => void open(p.id)}>
+                    <span>
+                      <strong>{p.name}</strong>
+                      <span>{p.email}</span>
+                    </span>
+                    <span
+                      className="portal-state"
+                      data-state={
+                        p.status === "Pending verification"
+                          ? "pending"
+                          : p.status
+                      }
+                    >
+                      {p.status}
+                    </span>
+                  </button>
+                </li>
+              ))}
           </ul>
-          {!loading && !users.length && <p>No users match this search.</p>}
+          {!loading && !users.length && <p>No users match these filters.</p>}
           <div className="portal-job-actions">
             <button
               className="button"

@@ -1,11 +1,13 @@
+import { pageMetadata } from "@/lib/seo";
 import { Intro, SocialLinks } from "@/components/site";
 import ContactForm from "@/components/contact-form";
 import { profile } from "@/content/site";
 import Link from "next/link";
-export const metadata = {
-  title: "Contact Me",
-  alternates: { canonical: "/contact" },
-};
+export const metadata = pageMetadata(
+  "Contact Me",
+  "Contact Ataimo Edem about API architecture, cloud and Kubernetes platforms, engineering collaboration or a consultation.",
+  "/contact",
+);
 export default function Page() {
   return (
     <div className="page contact-page">

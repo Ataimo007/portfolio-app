@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,11 +17,11 @@ export async function generateMetadata({
   const { slug } = await params;
   const credential = certifications.find((item) => item.slug === slug);
   if (!credential) notFound();
-  return {
-    title: `${credential.title} — Credential`,
-    description: `${credential.issuer}: ${credential.title}, earned by Ataimo Edem on ${credential.earned}.`,
-    alternates: { canonical: `/certifications/${slug}` },
-  };
+  return pageMetadata(
+    `${credential.title} — Credential`,
+    `${credential.issuer}: ${credential.title}, earned by Ataimo Edem on ${credential.earned}.`,
+    `/certifications/${slug}`,
+  );
 }
 export default async function CredentialPage({
   params,

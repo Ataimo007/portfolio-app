@@ -1,10 +1,30 @@
+import { publicURL, structuredData, pageMetadata } from "@/lib/seo";
 import Image from "next/image";
 import { Intro } from "@/components/site";
 import CareerJourney from "@/components/career-journey";
-export const metadata = { title: "About", alternates: { canonical: "/about" } };
+export const metadata = pageMetadata(
+  "About",
+  "Meet Ataimo Edem, a Customer Success Engineer at Tyk working across API platforms, solutions architecture, Azure and Kubernetes.",
+  "/about",
+);
 export default function About() {
   return (
     <div className="page about-page">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: structuredData({
+            "@context": "https://schema.org",
+            "@type": "ProfilePage",
+            url: publicURL("/about"),
+            mainEntity: {
+              "@id": publicURL("/#person"),
+              "@type": "Person",
+              name: "Ataimo Edem",
+            },
+          }),
+        }}
+      />
       <Intro
         label="THE PERSON BEHIND THE PLATFORM"
         title="Built on curiosity. Grounded in experience."

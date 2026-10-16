@@ -1,3 +1,4 @@
+import { pageMetadata } from "@/lib/seo";
 import {
   Intro,
   DownloadResume,
@@ -9,10 +10,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 import { profile, certifications } from "@/content/site";
-export const metadata = {
-  title: "Resume",
-  alternates: { canonical: "/resume" },
-};
+export const metadata = pageMetadata(
+  "Resume",
+  "Read and download Ataimo Edem’s resume, including engineering experience, technical projects and Microsoft certifications.",
+  "/resume",
+);
 export default function Page() {
   return (
     <div className="page resume">
